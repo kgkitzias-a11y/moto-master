@@ -52,10 +52,10 @@ export function renderSettings(ctx) {
     if (!p.token) { ctx.toast('Πρώτα αποθήκευσε token σε αυτή τη συσκευή.'); return; }
     try { await loadScript('./src/vendor/qrcode.js'); } catch (e) { ctx.toast('Η βιβλιοθήκη QR δεν φορτώθηκε.'); return; }
     const str = encodePairing({ token: p.token, gistId: s.gistId });
-    const url = `${location.origin}${location.pathname}#pair=${str}`;
+    const payload = `mm1:${str}`; // deliberately NOT a URL: camera apps must not open it in Safari or keep it in URL history
     pairBox.replaceChildren();
     try {
-      const qr = window.qrcode(0, 'M'); qr.addData(url); qr.make();
+      const qr = window.qrcode(0, 'M'); qr.addData(payload); qr.make();
       const holder = h('div', { class: 'qr' }); holder.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
       const svg = holder.querySelector('svg'); if (svg) { svg.setAttribute('width', '220'); svg.setAttribute('height', '220'); }
       pairBox.append(holder);
@@ -73,7 +73,7 @@ export function renderSettings(ctx) {
   const pairInput = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: false, placeholder: 'Επικόλλησε τον κωδικό σύζευξης…' });
   const applyPairing = (str) => {
     try {
-      const pr = decodePairing(str.replace(/^.*#pair=/, ''));
+      const pr = decodePairing(str.trim().replace(/^.*#pair=/, '').replace(/^mm1:/, ''));
       p.setToken(pr.token); if (pr.gistId) p.updateSettings({ gistId: pr.gistId });
       ctx.toast('Σύζευξη OK — συγχρονισμός…'); p.syncNow('pair').then(() => route());
     } catch { ctx.toast('Μη έγκυρος κωδικός σύζευξης.'); }

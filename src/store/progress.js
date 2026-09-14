@@ -1,5 +1,6 @@
 // Progress store: in-memory event log + derived state + sync orchestration.
-import { loadEvents, addEvents, clearEvents, loadSettings, saveSettings, loadToken, saveToken } from './db.js';
+import { loadEvents, addEvents, deleteEvents, clearEvents, loadSettings, saveSettings, loadToken, saveToken } from './db.js';
+import { sanitizeEvents } from '../engine/events.js';
 import { reduce } from '../engine/reducer.js';
 import { uuid } from '../engine/shuffle.js';
 import { syncOnce, SyncError, decodeEvents, encodeEvents, sortForStorage } from '../sync/gist.js';
@@ -13,6 +14,7 @@ export class Progress extends EventTarget {
     this.settings = loadSettings();
     if (!this.settings.deviceId) { this.settings.deviceId = uuid().slice(0, 8); saveSettings(this.settings); }
     this.dirty = false;
+    this._seq = 0; // bumped on every local append; lets a sync know if new events arrived meanwhile
     this.sync = { status: 'local', lastAt: this.settings.lastSyncAt, error: null, inFlight: null };
     this._timer = null;
   }
@@ -43,7 +45,7 @@ export class Progress extends EventTarget {
     if (!list.length) return;
     await addEvents(list);
     this.events.push(...list);
-    this.dirty = true;
+    this.dirty = true; this._seq++;
     this._recompute();
     this._scheduleSync();
   }
@@ -58,13 +60,13 @@ export class Progress extends EventTarget {
     return encodeEvents(sortForStorage(this.events));
   }
   async importJson(text) {
-    const incoming = decodeEvents(text);
+    const incoming = sanitizeEvents(decodeEvents(text));
     const have = new Set(this.events.map((e) => e.id));
-    const fresh = incoming.filter((e) => e && typeof e.id === 'string' && Number.isFinite(e.t) && !have.has(e.id));
+    const fresh = incoming.filter((e) => !have.has(e.id));
     if (fresh.length) {
       await addEvents(fresh);
       this.events.push(...fresh);
-      this.dirty = true;
+      this.dirty = true; this._seq++;
       this._recompute();
       this._scheduleSync();
     }
@@ -91,17 +93,19 @@ export class Progress extends EventTarget {
     const io = {
       loadLocal: async () => loadEvents(),
       addLocal: async (evs) => { await addEvents(evs); this.events.push(...evs); },
+      removeLocal: async (ids) => { await deleteEvents(ids); const drop = new Set(ids); this.events = this.events.filter((e) => !drop.has(e.id)); },
       getGistId: () => this.settings.gistId,
       setGistId: (id) => this.updateSettings({ gistId: id }),
     };
+    const seqAtStart = this._seq;
     const run = (async () => {
       try {
         const r = await syncOnce(token, io);
-        this.dirty = false;
+        this.dirty = this._seq !== seqAtStart; // events appended during the round are still unsynced
         const now = Date.now();
         this.updateSettings({ lastSyncAt: now });
         this._setSync({ status: 'synced', lastAt: now, error: null, last: r });
-        if (r.pulled) this._recompute();
+        if (r.pulled || r.total !== this.events.length) this._recompute();
         return r;
       } catch (e) {
         const msg = e instanceof SyncError ? e.message : (e && e.message) || 'Σφάλμα';

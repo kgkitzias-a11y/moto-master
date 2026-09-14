@@ -100,6 +100,15 @@ export class Session {
 
   current() { return this.ended ? null : this.cur; }
 
+  // The UI calls this when the question is actually rendered, so the response clock and the
+  // per-question deadline start at display time, not at the previous answer.
+  show(now) {
+    if (!this.cur || this.ended) return;
+    this._now = now;
+    this.cur.shownAt = now;
+    this.cur.deadline = this.preset.perQuestionMs ? now + this.preset.perQuestionMs : null;
+  }
+
   // Called by the UI clock. Returns 'timeout' if the per-question or session timer expired.
   tick(now) {
     this._now = now;

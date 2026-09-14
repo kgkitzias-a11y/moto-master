@@ -60,7 +60,7 @@ function route() {
   const sm = hash.match(/^\/setup\/([a-z0-9]+)$/);
   if (qm) node = renderQuestion(ctx, Number(qm[1]));
   else if (sm) node = renderModeSetup(ctx, sm[1]);
-  else if (routes[hash]) node = routes[hash](ctx);
+  else if (Object.hasOwn(routes, hash)) node = routes[hash](ctx);
   else node = renderHome(ctx);
   clear(view).appendChild(node);
   app.classList.toggle('in-session', hash === '/session' && !!ctx.session && !ctx.session.ended);
@@ -105,9 +105,13 @@ async function main() {
   await loadQuestions();
   ctx.progress = await new Progress(ctx.questions).init();
   if (pairing) {
-    ctx.progress.setToken(pairing.token);
-    if (pairing.gistId) ctx.progress.updateSettings({ gistId: pairing.gistId });
-    toast('Η σύζευξη ολοκληρώθηκε — συγχρονισμός…');
+    const existing = ctx.progress.token;
+    const ok = !existing || existing === pairing.token || confirm('Υπάρχει ήδη token σε αυτή τη συσκευή. Να αντικατασταθεί από τον σύνδεσμο σύζευξης;');
+    if (ok) {
+      ctx.progress.setToken(pairing.token);
+      if (pairing.gistId) ctx.progress.updateSettings({ gistId: pairing.gistId });
+      toast('Η σύζευξη ολοκληρώθηκε — συγχρονισμός…');
+    }
   }
   ctx.progress.addEventListener('sync', renderSyncPill);
   ctx.progress.addEventListener('settings', renderSyncPill);

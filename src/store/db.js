@@ -68,6 +68,19 @@ export async function addEvents(events) {
   });
 }
 
+export async function deleteEvents(ids) {
+  if (!ids || !ids.length) return;
+  const db = await openDb();
+  if (!db) { const drop = new Set(ids); lsWrite(lsRead().filter((e) => !drop.has(e.id))); return; }
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const os = tx.objectStore(STORE);
+    for (const id of ids) os.delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 export async function clearEvents() {
   const db = await openDb();
   if (!db) { lsWrite([]); return; }

@@ -1,6 +1,9 @@
 // GitHub Gist sync: one private gist, one file, union-by-UUID merge.
 // The token is passed in by the caller (read from localStorage) and never logged.
+import { sanitizeEvents } from '../engine/events.js';
+
 export const GIST_FILE = 'moto-master-progress.json';
+const RAW_HOST = 'gist.githubusercontent.com';
 export const GIST_DESC = 'Moto Master — πρόοδος (private, auto-managed)';
 const API = 'https://api.github.com';
 
@@ -30,8 +33,14 @@ async function api(token, path, { method = 'GET', body = null } = {}) {
   return res;
 }
 
+// Canonical serialisation (sorted keys, no whitespace) so equal logs are byte-equal everywhere.
+function canon(v) {
+  if (Array.isArray(v)) return v.map(canon);
+  if (v && typeof v === 'object') { const o = {}; for (const k of Object.keys(v).sort()) o[k] = canon(v[k]); return o; }
+  return v;
+}
 export function encodeEvents(events) {
-  return JSON.stringify({ v: 1, app: 'moto-master', events });
+  return JSON.stringify({ v: 1, app: 'moto-master', events: canon(events) });
 }
 export function decodeEvents(text) {
   if (!text || !text.trim()) return [];
@@ -46,8 +55,12 @@ async function readGistFile(token, gist) {
   const f = gist.files && gist.files[GIST_FILE];
   if (!f) return '';
   if (!f.truncated && typeof f.content === 'string') return f.content;
+  let u;
+  try { u = new URL(f.raw_url); } catch { throw new SyncError('Μη έγκυρο raw_url', { kind: 'format' }); }
+  if (u.protocol !== 'https:' || u.hostname !== RAW_HOST) throw new SyncError('Μη αναμενόμενος host raw_url', { kind: 'format' });
   let res;
-  try { res = await fetch(f.raw_url, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }); }
+  // The raw URL of a secret gist is unguessable and needs no auth: the token is deliberately NOT sent here.
+  try { res = await fetch(u.href, { cache: 'no-store', redirect: 'error', credentials: 'omit' }); }
   catch { throw new SyncError('Δεν υπάρχει σύνδεση', { kind: 'network' }); }
   if (!res.ok) throw new SyncError(`raw ${res.status}`, { status: res.status, kind: 'http' });
   return res.text();
@@ -57,7 +70,7 @@ export async function getGist(token, gistId) {
   const res = await api(token, `/gists/${encodeURIComponent(gistId)}`);
   const gist = await res.json();
   const text = await readGistFile(token, gist);
-  return { gist, events: decodeEvents(text) };
+  return { gist, events: sanitizeEvents(decodeEvents(text)) };
 }
 
 export async function findGist(token) {
@@ -113,8 +126,8 @@ export function compact(events) {
 }
 
 /**
- * Full sync round. `io` = { loadLocal(), addLocal(events), getGistId(), setGistId(id) }.
- * Returns { pushed, pulled, gistId }.
+ * Full sync round. `io` = { loadLocal(), addLocal(events), removeLocal(ids)?, getGistId(), setGistId(id) }.
+ * Returns { pushed, pulled, gistId, total }.
  */
 export async function syncOnce(token, io) {
   if (!token) throw new SyncError('Χωρίς token', { kind: 'auth' });
@@ -131,14 +144,22 @@ export async function syncOnce(token, io) {
   }
   const local = await io.loadLocal();
   const { merged, onlyLocal, onlyRemote } = mergeEvents(local, remote);
-  if (onlyRemote.length) await io.addLocal(onlyRemote);
-  let pushed = 0;
   const compacted = compact(merged);
-  if (onlyLocal.length || compacted.length !== remote.length) {
+  const keep = new Set(compacted.map((e) => e.id));
+  // Pull what the remote has and we lack (only events that survive compaction).
+  const pull = onlyRemote.filter((e) => keep.has(e.id));
+  if (pull.length) await io.addLocal(pull);
+  // Prune our own pre-reset events so they are never re-pushed.
+  const stale = local.filter((e) => e && e.id && !keep.has(e.id)).map((e) => e.id);
+  if (stale.length && io.removeLocal) await io.removeLocal(stale);
+  const push = onlyLocal.filter((e) => keep.has(e.id));
+  const remoteStale = remote.some((e) => !keep.has(e.id));
+  let pushed = 0;
+  if (push.length || remoteStale) {
     await updateGist(token, gistId, sortForStorage(compacted));
-    pushed = onlyLocal.length;
+    pushed = push.length;
   }
-  return { pushed, pulled: onlyRemote.length, gistId, total: compacted.length };
+  return { pushed, pulled: pull.length, gistId, total: compacted.length };
 }
 
 export function sortForStorage(events) {

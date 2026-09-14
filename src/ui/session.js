@@ -14,14 +14,14 @@ export function renderSession(ctx) {
   let locked = false;
 
   const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
-  window.addEventListener('hashchange', function onLeave() { stop(); window.removeEventListener('hashchange', onLeave); if (!s.ended && location.hash !== '#/session') { s.abort(); finish(); } });
+  window.addEventListener('hashchange', function onLeave() { stop(); window.removeEventListener('hashchange', onLeave); if (!s.ended && location.hash !== '#/session') { s.abort(); finish({ navigate: false }); } });
 
-  async function finish() {
+  async function finish({ navigate = true } = {}) {
     stop();
     const ev = s.sessionEvent(Date.now());
     ctx.lastSummary = s.summary();
     if (ev) await ctx.progress.append(ev);
-    if (location.hash !== '#/summary') location.hash = '#/summary';
+    if (navigate && location.hash !== '#/summary') location.hash = '#/summary';
     if (ctx.progress.dirty) ctx.progress.syncNow('session-end');
   }
 
@@ -29,6 +29,7 @@ export function renderSession(ctx) {
     clear(root);
     const cur = s.current();
     if (!cur) { finish(); return; }
+    s.show(Date.now());
     confidence = null; locked = false;
     const { q, order } = cur;
     const meta = modeMeta(s.mode);
@@ -85,11 +86,11 @@ export function renderSession(ctx) {
     };
     stop(); timer = setInterval(tick, 200); tick();
 
-    function submit(origIdx, selfGrade = null) {
+    async function submit(origIdx, selfGrade = null) {
       if (locked) return; locked = true; stop();
       const res = s.answer(origIdx, { now: Date.now(), confidence, selfGrade });
       if (!res) return;
-      ctx.progress.append(res.event);
+      await ctx.progress.append(res.event); // state below must reflect this answer
       if (s.preset.feedback === 'end') { if (s.ended) finish(); else draw(); return; }
       // immediate feedback
       for (const b of optButtons) {
@@ -105,7 +106,7 @@ export function renderSession(ctx) {
       const fb = h('div', { class: `feedback ${res.ok ? 'ok' : 'bad'}` },
         h('div', { class: 'verdict' }, res.ok ? 'Σωστό ✓' : (origIdx === null ? 'Τέλος χρόνου ✗' : 'Λάθος ✗')),
         h('div', { class: 'small muted' }, `${fmtMs(res.ms)} · επίπεδο ${st ? st.level : 0}/5${st && st.bin ? ' · στο κουτί λαθών' : ''}`),
-        !res.ok ? h('div', { class: 'small' }, `Σωστή: ${LETTERS[q.correct]}. ${q.options[q.correct]}`) : null,
+        !res.ok ? h('div', { class: 'small' }, `Σωστή: ${LETTERS[order.indexOf(q.correct)]}. ${q.options[q.correct]}`) : null,
         q.explanation ? h('div', { class: 'explain' }, q.explanation) : null,
         conf.length && !res.ok ? h('div', { class: 'small warn' }, 'Μπερδεύεται με ' + conf.map((c) => `Q${c.id}`).join(', ')) : null,
         h('div', { class: 'session-actions' }, h('button', { class: 'btn btn-primary btn-block', type: 'button', id: 'next-btn', onClick: () => { if (s.ended) finish(); else draw(); } }, s.ended ? 'Αποτελέσματα' : 'Επόμενη')),

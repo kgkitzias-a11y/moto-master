@@ -72,7 +72,7 @@ export function renderQuestion(ctx, id) {
           h('div', { class: 'stat' }, h('div', { class: 'v' }, fmtMs(median(s.ms))), h('div', { class: 'l' }, 'διάμεσος χρόνος'))),
         h('p', { class: 'small' }, h('span', { class: 'tag' }, isSolid(s) ? '«σταθερή» ✓' : 'όχι «σταθερή»'), h('span', { class: 'tag' }, isMastered(s) ? 'mastered ✓' : 'όχι mastered'),
           inBin(s) ? h('span', { class: 'tag warn' }, `στο κουτί λαθών (${s.bin.days.length}/${RULES.BIN_EXIT_DAYS} μέρες)`) : null,
-          dueForPromotion(s, now) ? h('span', { class: 'tag' }, 'ώριμη για προαγωγή') : h('span', { class: 'tag' }, 'προαγωγή σε ' + Math.ceil((s.lastPromoT + RULES.PROMOTION_GAP_MS - now) / 3600000) + ' ώρες')),
+          s.level >= RULES.MAX_LEVEL ? h('span', { class: 'tag' }, 'επίπεδο 5 — μέγιστο') : dueForPromotion(s, now) ? h('span', { class: 'tag' }, 'ώριμη για προαγωγή') : h('span', { class: 'tag' }, 'προαγωγή σε ' + Math.max(1, Math.ceil((s.lastPromoT + RULES.PROMOTION_GAP_MS - now) / 3600000)) + ' ώρες')),
         h('p', { class: 'small muted' }, `Τελευταία: ${fmtDate(s.lastT)} · ${s.promoCount} προαγωγές σε ${s.promoDays.length} μέρες`),
         h('div', null, sparkline(s.history, 30)),
         wrongChoices.length ? h('p', { class: 'small' }, 'Λάθος επιλογές: ', wrongChoices.map(([i, n]) => `${LETTERS[i]} ×${n}`).join(', ')) : null,
