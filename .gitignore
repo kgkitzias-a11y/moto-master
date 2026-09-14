@@ -1,0 +1,12 @@
+# Owner's booklet photos — never committed
+question pictures/
+work/
+node_modules/
+tools/gh/
+test-results/
+playwright-report/
+.playwright/
+*.log
+.env
+.DS_Store
+Thumbs.db

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <title>Moto Master</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Προπονητής θεωρίας μοτοσυκλέτας (κατηγορία Α) — Moto Master">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="color-scheme" content="dark light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Moto Master">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon-180.png">
+  <link rel="stylesheet" href="./src/ui/styles.css">
+  <link rel="modulepreload" href="./src/app.js">
+  <link rel="modulepreload" href="./src/version.js">
+  <link rel="modulepreload" href="./src/store/progress.js">
+  <link rel="modulepreload" href="./src/store/db.js">
+  <link rel="modulepreload" href="./src/sync/gist.js">
+  <link rel="modulepreload" href="./src/engine/reducer.js">
+  <link rel="modulepreload" href="./src/engine/constants.js">
+  <link rel="modulepreload" href="./src/engine/time.js">
+  <link rel="modulepreload" href="./src/engine/shuffle.js">
+  <link rel="modulepreload" href="./src/engine/selection.js">
+  <link rel="modulepreload" href="./src/engine/session.js">
+  <link rel="modulepreload" href="./src/ui/dom.js">
+  <link rel="modulepreload" href="./src/ui/home.js">
+  <link rel="modulepreload" href="./src/ui/modes.js">
+  <link rel="modulepreload" href="./src/ui/session.js">
+  <link rel="modulepreload" href="./src/ui/stats.js">
+  <link rel="modulepreload" href="./src/ui/review.js">
+  <link rel="modulepreload" href="./src/ui/settings.js">
+  <link rel="modulepreload" href="./src/ui/certification.js">
+  <link rel="modulepreload" href="./src/ui/setup.js">
+  <link rel="preload" href="./data/questions.json" as="fetch" crossorigin="anonymous">
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <a class="brand" href="#/">🏍 Moto Master</a>
+      <div class="topbar-right">
+        <span id="sync-pill" class="pill pill-local" title="Κατάσταση συγχρονισμού">Τοπικά μόνο</span>
+      </div>
+    </header>
+    <div id="update-banner" class="banner" hidden>
+      <span>Νέα έκδοση διαθέσιμη.</span>
+      <button id="update-btn" class="btn btn-sm">Ανανέωση</button>
+    </div>
+    <main id="view" class="view" aria-live="polite"></main>
+    <nav class="tabbar" id="tabbar">
+      <a href="#/" data-tab="home">Αρχική</a>
+      <a href="#/stats" data-tab="stats">Στατιστικά</a>
+      <a href="#/review" data-tab="review">Ερωτήσεις</a>
+      <a href="#/settings" data-tab="settings">Ρυθμίσεις</a>
+    </nav>
+    <footer class="footer"><span id="version-stamp">Moto Master</span></footer>
+  </div>
+  <noscript>Η εφαρμογή χρειάζεται JavaScript.</noscript>
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>

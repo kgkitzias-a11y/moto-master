@@ -1,0 +1,101 @@
+{
+ "files": [
+  {
+   "file": "viber_image_2026-09-14_20-45-07-657.jpg",
+   "bytes": 194884,
+   "sha256": "949fbf1c2825b4d0f89872d701033330eb8f06e1c47f68f50f5b1b141913d0d6"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-49-872.jpg",
+   "bytes": 208490,
+   "sha256": "dcb19a23e0b7606d3348242ca8da61be9e2f82aafbbf06cff4d476329926e5d2"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-50-161.jpg",
+   "bytes": 231047,
+   "sha256": "3ed347ad33c91633dd5f5be198b640f58cf9b20181112c878845259f17f43c9b"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-50-380.jpg",
+   "bytes": 208677,
+   "sha256": "029951cf4cfb8f5ab9c1d90c97f0ff3b2a4928b9515913bb2751a121f70d8bce"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-50-596.jpg",
+   "bytes": 218188,
+   "sha256": "f519e59b21e4ebe552a944cfdededef5734fb96530e5980ee7eedec010b334bd"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-50-800.jpg",
+   "bytes": 217319,
+   "sha256": "50fcafcb2a5b483b3ee24bcf7445fed935bd2d038e6b1b239562a1d5b2bd9b86"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-50-988.jpg",
+   "bytes": 223538,
+   "sha256": "e5fab5523023704be016dd882e08e466945da3b4b2bce4dee2e597e821165810"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-51-200.jpg",
+   "bytes": 228009,
+   "sha256": "aeb0cc1d3edd0372102fd7c2d4d85da0646202dd655ec4531d198724b65e04d7"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-51-430.jpg",
+   "bytes": 256130,
+   "sha256": "46846c2655608e16717c616e276ed3b036ee9f3710a508e93b5dae728bc7f6ff"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-51-616.jpg",
+   "bytes": 240935,
+   "sha256": "a7d91b951455b7b3c31856566d97b98d85cb689acc2bbb36b3b3db79ba07b593"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-51-820.jpg",
+   "bytes": 249895,
+   "sha256": "97a04260bf6fe9e1d1997766f95a7f640b5fa804bf3199e6a3effc8846da1868"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-52-032.jpg",
+   "bytes": 227504,
+   "sha256": "090c2356f68e30bd39b33595e42f199679ff13225a990e9fbf412d5e3eb715e2"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-52-233.jpg",
+   "bytes": 255910,
+   "sha256": "c07fedcc277fb5db3e0002855e0c915177a1ef9ba3cf848fe9b4f37145086d0f"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-52-435.jpg",
+   "bytes": 243654,
+   "sha256": "d8f8450d8c7342fd59801496521c7d3fd04997c1415aebb4d2908df3e492352b"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-52-645.jpg",
+   "bytes": 214181,
+   "sha256": "05b7ed181ebaffcc18b21d9b7e5eff79955e23dc342522f7c5ad17a5c493c081"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-52-850.jpg",
+   "bytes": 209570,
+   "sha256": "e872ffa45f9ae991d30df8b980f565e37e7d5566b86da97259ee1917bd22c032"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-53-049.jpg",
+   "bytes": 253449,
+   "sha256": "2c40f80963011f9a89d29ac9d3f6ccfb202d0584eda0457873179c124a9f9a2a"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-53-321.jpg",
+   "bytes": 243759,
+   "sha256": "2b0f5f4294f1263a51e6fb529fbde5cfd88228083a5715319444f829e3f5a805"
+  },
+  {
+   "file": "viber_image_2026-09-14_20-45-53-531.jpg",
+   "bytes": 210431,
+   "sha256": "4de9d9817428ceb8ca4cfb7d007607ce776aea8d2433e25a96d707e8e9e5b7e5"
+  }
+ ],
+ "count": 19,
+ "note": "Photos are not part of the repository (git-ignored); hashes prove which files the dataset was built from."
+}

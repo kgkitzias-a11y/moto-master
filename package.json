@@ -1,0 +1,17 @@
+{
+  "name": "moto-master",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Προπονητής θεωρίας μοτοσυκλέτας (κατηγορία Α) — PWA",
+  "scripts": {
+    "build": "node tools/build.js",
+    "test": "node --test \"tests/unit/*.test.js\"",
+    "test:e2e": "playwright test",
+    "serve": "node tools/serve.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "lighthouse": "^13.4.1"
+  }
+}
