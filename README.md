@@ -1,6 +1,6 @@
 # Moto Master
 
-**Live:** https://__GH_USER__.github.io/moto-master/
+**Live:** https://kgkitzias-a11y.github.io/moto-master/
 
 Προπονητής θεωρίας για τη μοτοσυκλέτα (κατηγορία Α, κάτοχος Β με κωδικό 121). Vanilla HTML/CSS/JS PWA, Greek UI, χωρίς build step και χωρίς CDN. Η πρόοδος συγχρονίζεται PC ↔ iPhone μέσω ενός ιδιωτικού GitHub Gist.
 
