@@ -53,10 +53,6 @@ export function renderSession(ctx) {
 
     const optButtons = [];
     const optionsEl = h('div', { class: 'options' });
-    const confEl = s.confidenceOn ? h('div', { class: 'conf' },
-      h('button', { class: 'btn', type: 'button', dataset: { conf: 'sure' }, onClick: (e) => pickConf('sure', e.currentTarget) }, 'Το ξέρω'),
-      h('button', { class: 'btn', type: 'button', dataset: { conf: 'unsure' }, onClick: (e) => pickConf('unsure', e.currentTarget) }, 'Μαντεύω')) : null;
-    function pickConf(v, btn) { confidence = v; for (const b of confEl.children) b.classList.toggle('sel', b === btn); for (const b of optButtons) b.disabled = false; }
 
     if (s.preset.recall) {
       const reveal = h('button', { class: 'btn btn-primary btn-block', type: 'button', onClick: () => { s.reveal(); reveal.remove(); showRecallAnswer(); } }, 'Δείξε την απάντηση');
@@ -71,11 +67,11 @@ export function renderSession(ctx) {
       }
     } else {
       order.forEach((origIdx, displayIdx) => {
-        const b = h('button', { class: 'opt', type: 'button', disabled: s.confidenceOn, dataset: { orig: origIdx }, onClick: () => submit(origIdx) },
+        const b = h('button', { class: 'opt', type: 'button', dataset: { orig: origIdx }, onClick: () => submit(origIdx) },
           h('span', { class: 'k' }, LETTERS[displayIdx] + '.'), h('span', null, q.options[origIdx]));
         optButtons.push(b); optionsEl.appendChild(b);
       });
-      card.append(confEl, optionsEl);
+      card.append(optionsEl);
     }
     root.append(top, prog, bar, card);
 
@@ -114,7 +110,6 @@ export function renderSession(ctx) {
         else if (oi === origIdx) b.classList.add('wrong');
         else b.classList.add('dim');
       }
-      if (confEl) confEl.remove();
       const st = ctx.progress.state.q[q.id];
       const conf = confusions(st).slice(0, 2);
       const leveled = st && st.level > levelBefore;
@@ -144,8 +139,6 @@ export function renderSession(ctx) {
     const cur = s.current(); if (!cur) return;
     if (e.key >= '1' && e.key <= '5') { const b = root.querySelectorAll('.opt')[Number(e.key) - 1]; if (b && !b.disabled) b.click(); }
     else if (e.key === 'Enter') { const n = root.querySelector('#next-btn'); if (n) n.click(); }
-    else if (e.key.toLowerCase() === 's' && s.confidenceOn) root.querySelector('[data-conf="sure"]')?.click();
-    else if (e.key.toLowerCase() === 'u' && s.confidenceOn) root.querySelector('[data-conf="unsure"]')?.click();
   });
   draw();
   setTimeout(() => root.focus(), 0);

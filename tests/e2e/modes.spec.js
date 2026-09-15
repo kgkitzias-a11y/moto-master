@@ -206,7 +206,6 @@ const drivers = {
     await expect(page).toHaveURL(/#\/session$/);
     await expect(page.locator('.session-top')).toContainText('Από μνήμης · 1/1');
     await expect(page.locator('button.opt')).toHaveCount(0); // options hidden until reveal
-    await expect(page.locator('[data-conf]')).toHaveCount(0); // no confidence prompt in recall
     await page.getByRole('button', { name: 'Δείξε την απάντηση' }).click();
     await expect(page.locator('.feedback .verdict')).toContainText('Σωστή απάντηση:');
     await expect(page.locator('.feedback .opt.correct')).toHaveCount(1);

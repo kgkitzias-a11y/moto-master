@@ -75,7 +75,7 @@ export class Session {
     this.endReason = null;
     this.cur = null;
     this.hard = !!this.preset.hard || !!settings.hardMode;
-    this.confidenceOn = settings.confidence !== false && !this.preset.recall;
+    this.confidenceOn = false; // confidence prompt removed (D-028); historical events keep their cf value
     this.timed = !!this.preset.timerMs;
     this._prepare(now);
   }

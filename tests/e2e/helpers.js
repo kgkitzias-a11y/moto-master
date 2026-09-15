@@ -25,9 +25,11 @@ export async function clickMode(page, id) {
   return card;
 }
 
-export async function pickConfidence(page) {
+export async function pickConfidence(page) { return; // confidence prompt removed (D-028)
+  /*
   const sure = page.locator('[data-conf="sure"]');
   if (await sure.count()) await sure.first().click();
+  */
 }
 
 // Answers the current question by clicking the first option (assertions are about flow, not

@@ -41,7 +41,6 @@ test('app shell and questions load with the network offline', async ({ page, con
     await expect(page).toHaveURL(/#\/session$/);
     await expect(page.locator('.qtext')).not.toBeEmpty();
     await expect.poll(() => page.locator('button.opt').count()).toBeGreaterThanOrEqual(2);
-    await page.locator('[data-conf="sure"]').click();
     await page.locator('button.opt').first().click();
     await endSession(page);
     expect((await summaryScore(page)).answered).toBe(1);

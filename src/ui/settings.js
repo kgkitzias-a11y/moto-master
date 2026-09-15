@@ -165,7 +165,6 @@ export function renderSettings(ctx) {
     h('div', { class: 'card' },
       h('h3', null, 'Προπόνηση'),
       toggleRow('Δύσκολο τεστ (παντού)', 'Κάθε λάθος → επίπεδο 0, σε όλα τα τεστ.', s.hardMode, (v) => p.updateSettings({ hardMode: v })),
-      toggleRow('Ερώτηση «Το ξέρω / Μαντεύω»', 'Πριν απαντήσεις διαλέγεις «Το ξέρω» ή «Μαντεύω». Λάθος ενώ «Το ξέρω» → επίπεδο 0.', s.confidence, (v) => p.updateSettings({ confidence: v })),
       toggleRow('Ερωτήσεις εκτός ύλης', 'Προσθέτει τις ερωτήσεις που ανακτήθηκαν από άλλες πηγές (ID που λείπουν από το βιβλίο). Δεν μετράνε στην ετοιμότητα.', s.includeArchive, (v) => { p.updateSettings({ includeArchive: v }); route(); })),
     h('div', { class: 'card' },
       h('h3', null, 'Αντίγραφα ασφαλείας'),

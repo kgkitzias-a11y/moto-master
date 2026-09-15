@@ -153,7 +153,7 @@ describe('Session engine', () => {
     assert.equal(e.ms, 2500);
     assert.equal(e.m, 'practice');
     assert.equal(e.s, s.id);
-    assert.equal(e.cf, 'unsure');
+    assert.equal(e.cf, null); // confidence prompt removed (D-028): new events never carry cf
     assert.equal(e.sh, true);
     assert.equal(e.tl, null);
     assert.equal(e.hd, false);
@@ -192,11 +192,12 @@ describe('Session engine', () => {
     assert.equal(p.answer(correctOf(p), { now: T0 + 10 }).event.hd, false);
   });
 
-  test('settings.confidence === false → cf:null even when a confidence is passed', () => {
-    const s = new Session({ mode: MODES.practice, questions: Q, queue: [1], settings: { confidence: false }, now: T0, rnd: mulberry32(1) });
+  test('confidence prompt is gone: cf is always null on new events, whatever settings or args say', () => {
+    const s = new Session({ mode: MODES.practice, questions: Q, queue: [1], settings: { confidence: false } });
     assert.equal(s.answer(correctOf(s), { now: T0 + 10, confidence: 'sure' }).event.cf, null);
-    const s2 = new Session({ mode: MODES.practice, questions: Q, queue: [1], settings: {}, now: T0, rnd: mulberry32(1) });
-    assert.equal(s2.answer(correctOf(s2), { now: T0 + 10, confidence: 'sure' }).event.cf, 'sure');
+    const s2 = new Session({ mode: MODES.practice, questions: Q, queue: [1], settings: { confidence: true } });
+    assert.equal(s2.answer(correctOf(s2), { now: T0 + 10, confidence: 'sure' }).event.cf, null);
+    assert.equal(s2.confidenceOn, false);
   });
 
   test('recall mode: answer(null, {selfGrade:true}) → ok:true, rc:true, sh:false, ch:null, cf:null', () => {
