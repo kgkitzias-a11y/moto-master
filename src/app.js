@@ -9,14 +9,15 @@ import { renderReview, renderQuestion } from './ui/review.js';
 import { renderSettings } from './ui/settings.js';
 import { renderCertification } from './ui/certification.js';
 import { renderModeSetup } from './ui/setup.js';
+import { applyTheme } from './ui/fx.js';
 
 export const ctx = {
   questions: [], meta: null, progress: null, session: null, lastSummary: null, version: VERSION,
   toast, navigate, activeQuestions,
 };
 
-function toast(msg, ms = 2200) {
-  const el = h('div', { class: 'toast' }, msg);
+function toast(msg, ms = 2200, cls = '') {
+  const el = h('div', { class: `toast ${cls}` }, msg);
   document.body.appendChild(el);
   setTimeout(() => el.remove(), ms);
 }
@@ -104,6 +105,8 @@ async function main() {
   const pairing = consumePairing();
   await loadQuestions();
   ctx.progress = await new Progress(ctx.questions).init();
+  applyTheme(ctx.progress.settings.theme);
+  ctx.progress.addEventListener('settings', () => applyTheme(ctx.progress.settings.theme));
   if (pairing) {
     const existing = ctx.progress.token;
     const ok = !existing || existing === pairing.token || confirm('Υπάρχει ήδη token σε αυτή τη συσκευή. Να αντικατασταθεί από τον σύνδεσμο σύζευξης;');

@@ -102,6 +102,11 @@ export const DEFAULT_SETTINGS = Object.freeze({
   lastSyncAt: null,
   deviceId: null,
   seenVersion: null,
+  examDate: null,        // 'YYYY-MM-DD' → countdown on the home screen
+  dailyGoal: 40,         // answers per day (goal-gradient bar)
+  sound: true,           // feedback ticks
+  haptics: true,         // vibrate on Android
+  theme: 'dark',         // 'dark' | 'light' | 'auto'
 });
 export function loadSettings() {
   try {

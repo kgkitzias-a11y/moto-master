@@ -211,7 +211,7 @@ const drivers = {
     await expect(page.locator('.feedback .verdict')).toContainText('Σωστή απάντηση:');
     await expect(page.locator('.feedback .opt.correct')).toHaveCount(1);
     await page.getByRole('button', { name: 'Το ήξερα' }).click();
-    await expect(page.locator('.feedback .verdict')).toHaveText('Σωστό ✓');
+    await expect(page.locator('.feedback .verdict')).toContainText('Σωστό ✓');
     expect(await clickNext(page)).toBe(true);
     const s = await expectSummary(page, 'recall');
     expect(s).toEqual({ correct: 1, answered: 1 });
