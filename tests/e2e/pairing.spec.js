@@ -40,7 +40,7 @@ test('pairing string from A configures B and strips the hash', async ({ browser 
     expect(await B.evaluate(() => localStorage.getItem('mm.gh.token'))).toBe(TOKEN);
     expect(JSON.parse(await B.evaluate(() => localStorage.getItem('mm.settings'))).gistId).toBe(gistId);
     await expect(B.locator('.toast')).toHaveText('Η σύζευξη ολοκληρώθηκε — συγχρονισμός…');
-    await expect(B.locator('#sync-pill')).not.toHaveText('Τοπικά μόνο');
+    await expect(B.locator('#sync-pill')).not.toHaveText('Μόνο τοπικά');
     await expect(B.locator('#sync-pill')).toHaveText(/^Συγχρονίστηκε/);
     await expect(B.locator('#sync-pill')).toHaveClass(/pill-synced/);
 

@@ -13,7 +13,7 @@ test('answers persist across reload and appear on the question page', async ({ p
 
   const seen = await readSeenStat(page);
   expect(seen).toMatch(/^3\/\d+$/);
-  await expect(page.locator('#view')).toContainText('Ημερολόγιο συνεδριών');
+  await expect(page.locator('#view')).toContainText('Ιστορικό συνεδριών');
   await expect(page.locator('#view table tbody tr', { hasText: 'Εξάσκηση' })).toHaveCount(1);
 
   await page.reload();

@@ -76,11 +76,11 @@ function renderSyncPill() {
   const pill = document.getElementById('sync-pill');
   const s = ctx.progress.sync;
   pill.className = 'pill';
-  if (!ctx.progress.token) { pill.classList.add('pill-local'); pill.textContent = 'Τοπικά μόνο'; return; }
+  if (!ctx.progress.token) { pill.classList.add('pill-local'); pill.textContent = 'Μόνο τοπικά'; return; }
   if (s.status === 'syncing') { pill.classList.add('pill-syncing'); pill.textContent = 'Συγχρονισμός…'; }
   else if (s.status === 'error') { pill.classList.add('pill-error'); pill.textContent = 'Σφάλμα'; pill.title = s.error || ''; }
   else if (s.status === 'synced' || s.lastAt) { pill.classList.add(ctx.progress.dirty ? 'pill-local' : 'pill-synced'); pill.textContent = `Συγχρονίστηκε ${fmtRel(s.lastAt)}`; }
-  else { pill.classList.add('pill-local'); pill.textContent = 'Τοπικά μόνο'; }
+  else { pill.classList.add('pill-local'); pill.textContent = 'Μόνο τοπικά'; }
 }
 
 function registerSW() {

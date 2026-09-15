@@ -19,7 +19,7 @@ test('two devices converge on the same merged state via one gist', async ({ brow
   try {
     // ---- device A: token → find-or-create → gist created ----
     await gotoHash(A, '#/');
-    await expect(A.locator('#sync-pill')).toHaveText('Τοπικά μόνο');
+    await expect(A.locator('#sync-pill')).toHaveText('Μόνο τοπικά');
     await saveToken(A, TOKEN);
     expect(gh.created).toBe(1);
     expect(gh.gists.size).toBe(1);

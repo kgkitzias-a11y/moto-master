@@ -185,7 +185,7 @@ export function renderSummary(ctx) {
         h('div', { class: 'stat' }, h('div', { class: 'v' }, sum.wrong), h('div', { class: 'l' }, 'λάθη')),
         h('div', { class: 'stat' }, h('div', { class: 'v' }, fmtClock(sum.durationMs)), h('div', { class: 'l' }, 'χρόνος'))),
       sum.endReason === 'time' ? h('p', { class: 'bad' }, 'Έληξε ο χρόνος.') : null,
-      sum.endReason === 'abort' ? h('p', { class: 'muted' }, 'Η συνεδρία τερματίστηκε νωρίς.') : null,
+      sum.endReason === 'abort' ? h('p', { class: 'muted' }, 'Η συνεδρία τερματίστηκε πρόωρα.') : null,
       sum.completed && sum.mode === MODES.due ? h('p', { class: 'ok' }, 'Το σημερινό drill ολοκληρώθηκε ✓') : null,
       sum.completed && (sum.mode === MODES.tomorrow || sum.mode === MODES.wrong) ? h('p', { class: 'ok' }, 'Μηδενίστηκε ✓') : null,
       deltas),

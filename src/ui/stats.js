@@ -60,7 +60,7 @@ export function renderStats(ctx) {
     h('h2', null, 'Ιστορικό mock εξετάσεων'),
     mocks.length ? h('div', { class: 'card tight' }, h('table', null, h('thead', null, h('tr', null, h('th', null, 'Πότε'), h('th', null, 'Σκορ'), h('th', null, 'Λάθη'), h('th', null, 'Χρόνος'), h('th', null, ''))),
       h('tbody', null, mocks.map((m) => h('tr', null, h('td', null, fmtDate(m.t)), h('td', null, `${m.correct}/${m.total}`), h('td', null, m.wrongs.map((id) => h('a', { href: `#/q/${id}` }, `#${id} `))), h('td', null, fmtClock(m.durationMs)), h('td', { class: m.passed ? 'ok' : 'bad' }, m.passed ? 'ΠΕΡΑΣΕΣ' : 'ΚΟΠΗΚΕΣ')))))) : h('p', { class: 'muted' }, 'Δεν έχεις κάνει mock ακόμα.'),
-    h('h2', null, 'Ημερολόγιο συνεδριών'),
+    h('h2', null, 'Ιστορικό συνεδριών'),
     sessions.length ? h('div', { class: 'card tight' }, h('table', null, h('thead', null, h('tr', null, h('th', null, 'Πότε'), h('th', null, 'Λειτουργία'), h('th', null, 'Σκορ'), h('th', null, 'Χρόνος'))),
       h('tbody', null, sessions.map((s) => { const m = modeMeta(s.mode); return h('tr', null, h('td', null, fmtDate(s.t)), h('td', null, m ? m.title : s.mode), h('td', null, `${s.correct}/${s.total}`), h('td', null, fmtClock(s.durationMs))); })))) : h('p', { class: 'muted' }, 'Καμία συνεδρία ακόμα.'),
   );

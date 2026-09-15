@@ -24,7 +24,7 @@ export function readinessCard(ctx) {
     { ok: r.masteryOk, text: `Mastery 100 % (${r.mastery.done}/${r.mastery.total} στο επίπεδο 5 και «σταθερές»)` },
     { ok: r.mocksOk, text: `${r.mocksNeeded} συνεχόμενα ${RULES.EXAM_QUESTIONS}/${RULES.EXAM_QUESTIONS} χρονομετρημένα mock σε ≥${r.mockDaysNeeded} μέρες (τώρα: ${r.consecutivePerfect} συνεχόμενα, ${r.mockDays} μέρες)` },
     { ok: r.gauntletOk, text: `Ένα Gauntlet βιβλίου (${r.mastery.total}) με 0 λάθη` },
-    { ok: r.suddenOk, text: `Sudden Death σερί ≥${r.suddenNeeded} (καλύτερο: ${r.suddenBest})` },
+    { ok: r.suddenOk, text: `Σερί Sudden Death ≥${r.suddenNeeded} (καλύτερο: ${r.suddenBest})` },
   ];
   return h('div', { class: `card readiness ${r.ready ? 'ready' : ''}` },
     h('div', { class: 'row between' }, h('div', null, h('div', { class: 'small muted' }, 'Έτοιμος για εξετάσεις;'), h('div', { class: 'big' }, r.ready ? 'ΝΑΙ' : 'ΟΧΙ ΑΚΟΜΑ')),
@@ -54,7 +54,7 @@ function recommend(ctx, due, bin, weakCount) {
   if (due > 0) return { mode: MODES.due, title: 'Το σημερινό drill', sub: `${due} ερωτήσεις σε περιμένουν — ${bin ? bin + ' από το κουτί λαθών, ' : ''}μία σειρά και τελείωσες.` };
   if (bin > 0) return { mode: MODES.wrong, title: 'Καθάρισε το κουτί λαθών', sub: `${bin} ερωτήσεις που σε έριξαν. Μέχρι να μηδενιστούν.` };
   if (weakCount > 0) return { mode: MODES.tomorrow, title: 'Σφίξε τις αδύναμες', sub: `${weakCount} ερωτήσεις κάτω από επίπεδο ${RULES.WEAK_LEVEL}.` };
-  return { mode: MODES.exam, title: 'Mock εξέταση', sub: '10 ερωτήσεις, 10 λεπτά, το πολύ 1 λάθος. Όπως την αληθινή.' };
+  return { mode: MODES.exam, title: 'Mock εξέταση', sub: '10 ερωτήσεις, 10 λεπτά, το πολύ 1 λάθος. Όπως η αληθινή.' };
 }
 
 export function renderHome(ctx) {

@@ -22,7 +22,7 @@ const drivers = {
     expect(r).toEqual({ answered: 3, ended: 'abort' });
     const s = await expectSummary(page, 'practice');
     expect(s.answered).toBe(3);
-    await expect(page.locator('#view')).toContainText('Η συνεδρία τερματίστηκε νωρίς.');
+    await expect(page.locator('#view')).toContainText('Η συνεδρία τερματίστηκε πρόωρα.');
   },
 
   async adaptive(page) {
