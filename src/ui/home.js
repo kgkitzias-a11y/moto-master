@@ -1,7 +1,7 @@
 import { h } from './dom.js';
 import { SECTIONS, previewCount } from './modes.js';
 import { practiceSets } from '../engine/selection.js';
-import { readiness, dueStreak, dueList, inBin } from '../engine/reducer.js';
+import { readiness, dueStreak, dueList, inBin, isSolid } from '../engine/reducer.js';
 import { RULES, MODES } from '../engine/constants.js';
 import { startSession } from '../engine/session.js';
 import { dayKey } from '../engine/time.js';
@@ -16,6 +16,38 @@ export function ring(pct, label, sub, cls = '') {
   const el = h('div', { class: `ring ${cls}` }, svg, h('div', { class: 'lbl' }, label, h('small', null, sub)));
   requestAnimationFrame(() => requestAnimationFrame(() => bar.setAttribute('stroke-dashoffset', c * (1 - Math.max(0, Math.min(1, pct))))));
   return el;
+}
+
+// Progress in layers: what you have done today → seen/correct → level ladder → the strict «Εμπέδωση».
+export function progressCard(ctx) {
+  const st = ctx.progress.state;
+  const booklet = ctx.questions.filter((q) => q.tier === 'booklet');
+  const r = readiness(st, ctx.questions);
+  let seen = 0, correct = 0, answers = 0, solid = 0;
+  const levels = [0, 0, 0, 0, 0, 0];
+  for (const q of booklet) {
+    const x = st.q[q.id];
+    if (x && x.seen) { seen++; correct += x.correct; answers += x.seen; }
+    levels[x ? x.level : 0]++;
+    if (isSolid(x)) solid++;
+  }
+  const acc = answers ? Math.round(correct / answers * 100) : null;
+  const seenPct = seen / booklet.length * 100;
+  const above0 = booklet.length - levels[0];
+  const ladder = h('div', { class: 'ladder' }, levels.map((n, l) => h('div', { class: `lvl l${l}`, style: { flex: `${Math.max(n, 0.0001)} 0 0` }, title: `Επίπεδο ${l}: ${n}` })));
+  return h('div', { class: 'card' },
+    h('div', { class: 'grid' },
+      h('div', { class: 'stat' }, h('div', { class: 'v ok' }, `${correct}`), h('div', { class: 'l' }, `σωστές από ${answers}${acc !== null ? ` (${acc} %)` : ''}`)),
+      h('div', { class: 'stat' }, h('div', { class: 'v' }, `${seen}/${booklet.length}`), h('div', { class: 'l' }, 'ερωτήσεις που είδες')),
+      h('div', { class: 'stat' }, h('div', { class: 'v' }, `${above0}`), h('div', { class: 'l' }, 'ανέβηκαν επίπεδο'))),
+    h('div', { class: 'row between', style: { marginTop: '10px' } }, h('span', { class: 'small muted' }, 'Κάλυψη βιβλίου'), h('span', { class: 'small muted num' }, `${Math.round(seenPct)} %`)),
+    h('div', { class: 'mastery-bar' }, h('div', { style: { width: `${seenPct}%` } })),
+    h('div', { class: 'row between', style: { marginTop: '10px' } }, h('span', { class: 'small muted' }, 'Επίπεδα (0 → 5)'), h('span', { class: 'small muted num' }, levels.map((n, l) => `L${l}:${n}`).join(' · '))),
+    ladder,
+    h('div', { class: 'row between', style: { marginTop: '10px' } }, h('span', { class: 'small muted' }, 'Εμπέδωση (επίπεδο 5 + σίγουρη)'), h('span', { class: 'small muted num' }, `${r.mastery.done}/${booklet.length} · σίγουρες ${solid}`)),
+    h('div', { class: 'mastery-bar' }, h('div', { style: { width: `${r.mastery.pct}%` } })),
+    h('p', { class: 'small muted', style: { marginTop: '8px' } }, 'Η εμπέδωση ανεβαίνει αργά επίτηδες: κάθε επίπεδο θέλει σωστή απάντηση ≥8 ώρες μετά το προηγούμενο, και το 5 θέλει τουλάχιστον 3 διαφορετικές μέρες.'),
+  );
 }
 
 export function readinessCard(ctx) {
@@ -130,9 +162,7 @@ export function renderHome(ctx) {
 
   return h('div', null,
     hero,
-    h('div', { class: 'card' },
-      h('div', { class: 'row between' }, h('span', { class: 'small muted' }, 'Εμπέδωση βιβλίου'), h('span', { class: 'small muted num' }, `${r.mastery.done}/${r.mastery.total} ερωτήσεις · ${st.counts.answers} απαντήσεις συνολικά`)),
-      h('div', { class: 'mastery-bar' }, h('div', { style: { width: `${r.mastery.pct}%` } }))),
+    progressCard(ctx),
     readinessCard(ctx),
     h('div', { class: 'row between', style: { marginTop: '18px' } }, h('h2', { style: { margin: 0 } }, 'Τεστ εξάσκησης'), h('span', { class: 'small muted' }, `${passedCount}/${sets.length} με 100 %`)),
     h('p', { class: 'small muted' }, `Όλο το βιβλίο σε ${sets.length} σταθερά τεστ των ${RULES.PTEST_SIZE}. Ένα τεστ «περνάει» μόνο αν απαντήσεις σωστά σε όλες τις ερωτήσεις του (100 %).`),
