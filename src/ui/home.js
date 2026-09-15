@@ -1,5 +1,6 @@
 import { h } from './dom.js';
-import { MODE_LIST, previewCount } from './modes.js';
+import { SECTIONS, previewCount } from './modes.js';
+import { practiceSets } from '../engine/selection.js';
 import { readiness, dueStreak, dueList, inBin } from '../engine/reducer.js';
 import { RULES, MODES } from '../engine/constants.js';
 import { startSession } from '../engine/session.js';
@@ -25,6 +26,7 @@ export function readinessCard(ctx) {
     { ok: r.mocksOk, text: `${r.mocksNeeded} συνεχόμενες χρονομετρημένες προσομοιώσεις ${RULES.EXAM_QUESTIONS}/${RULES.EXAM_QUESTIONS} σε ≥${r.mockDaysNeeded} μέρες (τώρα: ${r.consecutivePerfect} συνεχόμενες, ${r.mockDays} μέρες)` },
     { ok: r.gauntletOk, text: `Μία φορά «Όλο το βιβλίο» (${r.mastery.total}) με 0 λάθη` },
     { ok: r.suddenOk, text: `Σερί ≥${r.suddenNeeded} στο «Μέχρι το πρώτο λάθος» (καλύτερο: ${r.suddenBest})` },
+    { ok: r.hardOk, text: `${r.hardNeeded} τέλειες «Σκληρές προσομοιώσεις» (τώρα: ${r.hardPerfect})` },
   ];
   return h('div', { class: `card readiness ${r.ready ? 'ready' : ''}` },
     h('div', { class: 'row between' }, h('div', null, h('div', { class: 'small muted' }, 'Έτοιμος για εξετάσεις;'), h('div', { class: 'big' }, r.ready ? 'ΝΑΙ' : 'ΟΧΙ ΑΚΟΜΑ')),
@@ -49,12 +51,14 @@ function examCountdown(settings, now) {
   return { days, urgent: days <= 7 };
 }
 
-function recommend(ctx, due, bin, weakCount) {
+function recommend(ctx, due, bin, weakCount, remainingToGoal, todayDone) {
   // Single best next action (removes the choice cost that kills habits).
-  if (due > 0) return { mode: MODES.due, title: 'Η σημερινή εξάσκηση', sub: `Σε περιμένουν ${due} ερωτήσεις — ${bin ? bin + ' από τα λάθη σου, ' : ''}ένας γύρος και τελείωσες.` };
-  if (bin > 0) return { mode: MODES.wrong, title: 'Διόρθωσε τα λάθη σου', sub: `${bin} ερωτήσεις που σε έριξαν. Μέχρι να μη μείνει καμία.` };
-  if (weakCount > 0) return { mode: MODES.tomorrow, title: 'Δούλεψε τις αδύναμες', sub: `${weakCount} ερωτήσεις κάτω από το επίπεδο ${RULES.WEAK_LEVEL}.` };
-  return { mode: MODES.exam, title: 'Προσομοίωση εξετάσεων', sub: '10 ερωτήσεις, 10 λεπτά, το πολύ 1 λάθος. Όπως στις πραγματικές εξετάσεις.' };
+  if (remainingToGoal > 0 && (todayDone || due === 0)) return { mode: MODES.goal, params: { remaining: remainingToGoal }, title: 'Συνέχισε προς τον στόχο', sub: `${remainingToGoal} ερωτήσεις ακόμα για το σημερινό ${ctx.progress.settings.dailyGoal || 40}.`, label: `Συνέχισε (${remainingToGoal} ακόμα) ▶` };
+  if (due > 0 && due <= Math.max(remainingToGoal, 5)) return { mode: MODES.due, params: {}, title: 'Η σημερινή εξάσκηση', sub: `Σε περιμένουν ${due} ερωτήσεις — ${bin ? bin + ' από τα λάθη σου, ' : ''}ένας γύρος και τελείωσες.`, label: 'Ξεκίνα τώρα ▶' };
+  if (due > 0) return { mode: MODES.goal, params: { remaining: remainingToGoal }, title: 'Η σημερινή εξάσκηση', sub: `${due} ερωτήσεις είναι για επανάληψη — ${bin ? bin + ' από τα λάθη σου. ' : ''}Παίρνεις τις ${Math.max(5, remainingToGoal)} επόμενες προς τον στόχο.`, label: remainingToGoal > 0 && remainingToGoal < (ctx.progress.settings.dailyGoal || 40) ? `Συνέχισε (${remainingToGoal} ακόμα) ▶` : 'Ξεκίνα τώρα ▶' };
+  if (bin > 0) return { mode: MODES.wrong, params: {}, title: 'Διόρθωσε τα λάθη σου', sub: `${bin} ερωτήσεις που σε έριξαν. Μέχρι να μη μείνει καμία.`, label: 'Ξεκίνα τώρα ▶' };
+  if (weakCount > 0) return { mode: MODES.tomorrow, params: {}, title: 'Δούλεψε τις αδύναμες', sub: `${weakCount} ερωτήσεις κάτω από επίπεδο ${RULES.WEAK_LEVEL}.`, label: 'Ξεκίνα τώρα ▶' };
+  return { mode: MODES.exam, params: {}, title: 'Προσομοίωση εξετάσεων', sub: '10 ερωτήσεις, 10 λεπτά, το πολύ 1 λάθος. Όπως στις πραγματικές εξετάσεις.', label: 'Ξεκίνα τώρα ▶' };
 }
 
 export function renderHome(ctx) {
@@ -73,8 +77,9 @@ export function renderHome(ctx) {
   const goal = s.dailyGoal || 40;
   const goalPct = Math.min(1, ans / goal);
   const cd = examCountdown(s, now);
-  const rec = recommend(ctx, due, bin, weakCount);
-  const start = (mode) => { ctx.session = startSession(mode, { questions: ctx.questions, state: st, settings: s }); if (ctx.session.isEmpty) { ctx.toast('Δεν υπάρχουν ερωτήσεις για αυτό το τεστ τώρα.'); return; } ctx.navigate('#/session'); };
+  const remainingToGoal = Math.max(0, goal - ans);
+  const rec = recommend(ctx, due, bin, weakCount, remainingToGoal, todayDone);
+  const start = (mode, params = {}) => { ctx.session = startSession(mode, { questions: ctx.questions, state: st, settings: s, params }); if (ctx.session.isEmpty) { ctx.toast('Δεν υπάρχουν ερωτήσεις για αυτό το τεστ τώρα.'); return; } ctx.navigate('#/session'); };
 
   const hero = h('div', { class: 'card hero' },
     h('div', { class: 'eyebrow' }, cd ? (cd.days > 0 ? `${cd.days} ${cd.days === 1 ? 'μέρα' : 'μέρες'} μέχρι τις εξετάσεις` : cd.days === 0 ? 'ΣΗΜΕΡΑ εξετάσεις' : 'Οι εξετάσεις πέρασαν — όρισε νέα ημερομηνία') : 'Επόμενο βήμα'),
@@ -89,24 +94,39 @@ export function renderHome(ctx) {
           h('div', { class: `kpi ${streakAtRisk ? 'danger' : ''}` }, h('div', { class: 'v' }, `${streak}🔥`), h('div', { class: 'l' }, streakAtRisk ? 'κινδυνεύει το σερί!' : 'μέρες σερί')),
           h('div', { class: 'kpi' }, h('div', { class: 'v' }, due), h('div', { class: 'l' }, 'για σήμερα')),
           h('div', { class: 'kpi' }, h('div', { class: 'v' }, bin), h('div', { class: 'l' }, 'τα λάθη σου'))))),
-    h('button', { class: 'btn btn-primary btn-block btn-hero', type: 'button', id: 'hero-btn', onClick: () => start(rec.mode) }, todayDone && rec.mode !== MODES.due ? 'Συνέχισε ▶' : 'Ξεκίνα τώρα ▶'),
-    streakAtRisk ? h('p', { class: 'small bad', style: { marginTop: '8px', textAlign: 'center' } }, `Αν δεν ολοκληρώσεις τη σημερινή εξάσκηση μέχρι τα μεσάνυχτα, χάνεις τις ${streak} μέρες σερί.`) : null,
+    h('button', { class: 'btn btn-primary btn-block btn-hero', type: 'button', id: 'hero-btn', onClick: () => start(rec.mode, rec.params) }, rec.label),
+    streakAtRisk ? h('p', { class: 'small bad', style: { marginTop: '8px', textAlign: 'center' } }, `Αν δεν πιάσεις τον σημερινό στόχο μέχρι τα μεσάνυχτα, χάνεις τις ${streak} μέρες σερί.`) : null,
     !s.examDate ? h('p', { class: 'small muted', style: { marginTop: '8px', textAlign: 'center' } }, h('a', { href: '#/settings' }, 'Όρισε ημερομηνία εξετάσεων'), ' για αντίστροφη μέτρηση.') : null,
   );
 
-  const modes = MODE_LIST.map((m) => {
+  const modeCard = (m) => {
     const n = previewCount(ctx, m.id);
     const disabled = n === 0;
     const hot = m.id === rec.mode;
-    return h('button', { class: `mode ${disabled ? 'disabled' : ''} ${hot ? 'hot' : ''}`, type: 'button', dataset: { mode: m.id },
+    return h('button', { class: `mode ${disabled ? 'disabled' : ''} ${hot ? 'hot' : ''} ${m.hard ? 'hardm' : ''}`, type: 'button', dataset: { mode: m.id },
       onClick: () => {
         if (disabled) { ctx.toast(emptyReason(m.id)); return; }
         if (m.setup) ctx.navigate(`#/setup/${m.id}`); else start(m.id);
       } },
       m.id === MODES.wrong && bin ? h('span', { class: 'nb' }, bin) : null,
       m.id === MODES.due && due ? h('span', { class: 'nb' }, due) : null,
+      m.hard ? h('span', { class: 'hardtag' }, '🔥') : null,
       h('span', { class: 't' }, m.title), h('span', { class: 'd' }, m.desc), h('span', { class: 'n' }, countLabel(m.id, n)));
-  });
+  };
+
+  // Numbered practice tests (fixed sets, same on every device); pass = 100 %.
+  const { sets, archive } = practiceSets(ctx.questions);
+  const ptCard = (idx, ids, label) => {
+    const p = st.ptests[idx === 'archive' ? -1 : idx];
+    const passed = !!(p && p.passed);
+    const best = p ? `${p.best}/${ids.length}` : '—';
+    return h('button', { class: `ptest ${passed ? 'passed' : ''}`, type: 'button', dataset: { set: idx }, onClick: () => start(MODES.ptest, { set: idx }) },
+      h('span', { class: 't' }, label), h('span', { class: 'b' }, passed ? '✓ 100 %' : `καλύτερο ${best}`), h('span', { class: 'c' }, `${ids.length} ερ.`));
+  };
+  const ptests = h('div', { class: 'ptests' }, sets.map((ids, i) => ptCard(i, ids, `Τεστ ${i + 1}`)), s.includeArchive && archive.length ? ptCard('archive', archive, 'Εκτός ύλης') : null);
+  const passedCount = sets.filter((_, i) => st.ptests[i] && st.ptests[i].passed).length;
+
+  const sections = SECTIONS.map((sec) => h('div', null, h('h2', null, sec.title), h('div', { class: 'modes' }, sec.modes.map(modeCard))));
 
   return h('div', null,
     hero,
@@ -114,8 +134,11 @@ export function renderHome(ctx) {
       h('div', { class: 'row between' }, h('span', { class: 'small muted' }, 'Εμπέδωση βιβλίου'), h('span', { class: 'small muted num' }, `${r.mastery.done}/${r.mastery.total} ερωτήσεις · ${st.counts.answers} απαντήσεις συνολικά`)),
       h('div', { class: 'mastery-bar' }, h('div', { style: { width: `${r.mastery.pct}%` } }))),
     readinessCard(ctx),
-    h('h2', null, 'Είδη τεστ'),
-    h('div', { class: 'modes' }, modes),
+    h('div', { class: 'row between', style: { marginTop: '18px' } }, h('h2', { style: { margin: 0 } }, 'Τεστ εξάσκησης'), h('span', { class: 'small muted' }, `${passedCount}/${sets.length} με 100 %`)),
+    h('p', { class: 'small muted' }, `Όλο το βιβλίο σε ${sets.length} σταθερά τεστ των ${RULES.PTEST_SIZE}. Ένα τεστ «περνάει» μόνο αν απαντήσεις σωστά σε όλες τις ερωτήσεις του (100 %).`),
+    ptests,
+    sections,
+    h('p', { class: 'small muted', style: { marginTop: '14px' } }, h('a', { href: '#/sheet' }, '📄 Σκονάκι'), ' — όλες οι ερωτήσεις με τη σωστή απάντηση, ανά κατηγορία.'),
   );
 }
 
@@ -126,6 +149,8 @@ function countLabel(mode, n) {
 }
 function emptyReason(mode) {
   if (mode === MODES.wrong) return 'Δεν έχεις λάθη αυτή τη στιγμή.';
+  if (mode === MODES.hardest) return 'Απάντησε πρώτα μερικές ερωτήσεις για να φανεί ποιες σε δυσκολεύουν.';
+  if (mode === MODES.numbers) return 'Δεν βρέθηκαν ερωτήσεις με αριθμούς.';
   if (mode === MODES.tomorrow) return 'Δεν υπάρχουν αδύναμες ερωτήσεις αυτή τη στιγμή.';
   if (mode === MODES.signs) return 'Το βιβλίο δεν έχει ερωτήσεις με εικόνα.';
   if (mode === MODES.trap) return 'Δεν βρέθηκαν ζευγάρια όμοιων ερωτήσεων.';

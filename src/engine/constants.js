@@ -18,6 +18,13 @@ export const RULES = Object.freeze({
   READY_SUDDEN_DEATH: 60,                  // one Sudden Death run ≥60
   SPEED_ROUND_MS: 5000,
   WEAK_LEVEL: 3,                           // level < 3 counts as weak
+  PTEST_SIZE: 20,                          // numbered practice tests (Genie-style), booklet split into sets of 20
+  PTEST_PASS: 1.0,                         // a practice test counts as passed only at 100 %
+  PTEST_SEED: 20260915,                    // fixed seed → the same sets on every device
+  HARD_EXAM_TIME_MS: 5 * 60 * 1000,        // hard simulator: 10 questions, 5 min, 0 wrong
+  HARD_EXAM_MAX_WRONG: 0,
+  READY_HARD_EXAMS: 3,                     // readiness also needs 3 perfect hard simulators
+  HARDEST_COUNT: 20,
 });
 
 export const MODES = Object.freeze({
@@ -35,6 +42,12 @@ export const MODES = Object.freeze({
   tomorrow: 'tomorrow',
   signs: 'signs',
   recall: 'recall',
+  goal: 'goal',          // continue toward today's answer goal
+  ptest: 'ptest',        // numbered practice test (params.set)
+  marathon: 'marathon',  // every question, misses re-queued until all cleared
+  hardest: 'hardest',    // your personally hardest questions
+  numbers: 'numbers',    // every question with a number/limit in it
+  hardexam: 'hardexam',  // 10 questions, 5 min, zero mistakes, no feedback
 });
 
 // Options that must stay in their printed (last) position when shuffling.

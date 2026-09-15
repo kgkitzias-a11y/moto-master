@@ -4,6 +4,8 @@ import { modeMeta } from './modes.js';
 import { startSession } from '../engine/session.js';
 import { confusions, isMastered } from '../engine/reducer.js';
 import { sfx, haptic, confetti, praise } from './fx.js';
+import { answersToday } from './home.js';
+import { RULES as R } from '../engine/constants.js';
 
 export function renderSession(ctx) {
   const s = ctx.session;
@@ -23,7 +25,8 @@ export function renderSession(ctx) {
 
   async function finish({ navigate = true } = {}) {
     stop();
-    const ev = s.sessionEvent(Date.now());
+    const goal = ctx.progress.settings.dailyGoal || 40;
+    const ev = s.sessionEvent(Date.now(), { goalReached: answersToday(ctx.progress) >= goal });
     ctx.lastSummary = s.summary();
     if (ev) await ctx.progress.append(ev);
     if (navigate && location.hash !== '#/summary') location.hash = '#/summary';
@@ -152,18 +155,24 @@ export function renderSummary(ctx) {
   const byId = new Map(ctx.questions.map((q) => [q.id, q]));
   const wrongs = [...new Set(sum.wrongs)];
   let verdict = null;
-  if (sum.mode === MODES.exam) verdict = h('div', { class: `verdict-big ${sum.passed ? 'ok' : 'bad'}` }, sum.passed ? 'ΠΕΡΑΣΕΣ' : 'ΚΟΠΗΚΕΣ');
+  if (sum.mode === MODES.exam || sum.mode === MODES.hardexam) verdict = h('div', { class: `verdict-big ${sum.passed ? 'ok' : 'bad'}` }, sum.passed ? 'ΠΕΡΑΣΕΣ' : 'ΚΟΠΗΚΕΣ');
+  else if (sum.mode === MODES.ptest) verdict = h('div', { class: `verdict-big ${sum.passed ? 'ok' : 'bad'}` }, sum.passed ? 'ΠΕΡΑΣΕΣ 100 %' : `${sum.correct}/${sum.total}`);
   else if (sum.mode === MODES.sudden) verdict = h('div', { class: 'verdict-big' }, `${sum.run} στη σειρά`);
-  const again = h('button', { class: 'btn btn-primary', type: 'button', onClick: () => { ctx.session = startSession(sum.mode, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings }); if (ctx.session.isEmpty) { ctx.toast('Δεν έμεινε τίποτα άλλο για αυτό το τεστ.'); return; } ctx.navigate('#/session'); } }, 'Ξανά');
+  const again = h('button', { class: 'btn btn-primary', type: 'button', onClick: () => { ctx.session = startSession(sum.mode, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings, params: sum.params || {} }); if (ctx.session.isEmpty) { ctx.toast('Δεν έμεινε τίποτα άλλο για αυτό το τεστ.'); return; } ctx.navigate('#/session'); } }, 'Ξανά');
   const perfect = sum.answered > 0 && sum.wrong === 0 && sum.endReason !== 'abort';
+  const goal = ctx.progress.settings.dailyGoal || 40;
+  const remaining = Math.max(0, goal - answersToday(ctx.progress));
+  const goalReached = remaining === 0;
+  const continueBtn = remaining > 0 ? h('button', { class: 'btn btn-primary btn-block btn-hero', type: 'button', id: 'continue-goal', onClick: () => { ctx.session = startSession(MODES.goal, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings, params: { remaining } }); if (ctx.session.isEmpty) { ctx.toast('Δεν υπάρχουν άλλες ερωτήσεις τώρα.'); return; } ctx.navigate('#/session'); } }, `Συνέχισε (${remaining} ακόμα για τον στόχο) ▶`) : h('p', { class: 'ok', style: { textAlign: 'center', fontWeight: 700 } }, `Ημερήσιος στόχος ${goal} ✓`);
+  const goalWasJustReached = goalReached && sum.mode === MODES.goal;
   const isRecord = sum.mode === MODES.sudden && sum.run > 0 && sum.run >= ctx.progress.state.sudden.best;
   const fx = ctx._sessionFx || { combo: () => 0, masteredBefore: new Set() };
   const masteredNow = ctx.questions.filter((q) => isMastered(ctx.progress.state.q[q.id])).length;
   const newlyMastered = ctx.questions.filter((q) => isMastered(ctx.progress.state.q[q.id]) && !fx.masteredBefore.has(q.id)).length;
   const bestCombo = fx.combo();
   const wrap = h('div', { class: 'celebrate' });
-  if ((perfect && sum.answered >= 5) || isRecord || (sum.mode === MODES.exam && sum.passed)) { setTimeout(() => { confetti(wrap, 70); if (ctx.progress.settings.sound !== false) sfx.fanfare(); }, 120); }
-  const headline = sum.mode === MODES.exam ? null : perfect && sum.answered >= 5 ? h('div', { class: 'verdict-big gold' }, 'ΤΕΛΕΙΟ') : sum.wrong <= 1 && sum.answered >= 8 ? h('div', { class: 'verdict-big ok' }, 'ΣΧΕΔΟΝ ΤΕΛΕΙΟ') : null;
+  if ((perfect && sum.answered >= 5) || isRecord || ((sum.mode === MODES.exam || sum.mode === MODES.hardexam || sum.mode === MODES.ptest) && sum.passed) || goalWasJustReached) { setTimeout(() => { confetti(wrap, 70); if (ctx.progress.settings.sound !== false) sfx.fanfare(); }, 120); }
+  const headline = (sum.mode === MODES.exam || sum.mode === MODES.hardexam || sum.mode === MODES.ptest) ? null : goalWasJustReached ? h('div', { class: 'verdict-big gold' }, 'ΣΤΟΧΟΣ ✓') : perfect && sum.answered >= 5 ? h('div', { class: 'verdict-big gold' }, 'ΤΕΛΕΙΟ') : sum.wrong <= 1 && sum.answered >= 8 ? h('div', { class: 'verdict-big ok' }, 'ΣΧΕΔΟΝ ΤΕΛΕΙΟ') : null;
   const deltas = h('div', { class: 'delta' },
     newlyMastered ? h('span', { class: 'tag up' }, `★ +${newlyMastered} εμπεδωμένες (σύνολο ${masteredNow})`) : null,
     bestCombo >= 5 ? h('span', { class: 'tag up' }, `🔥 ${bestCombo} στη σειρά`) : null,
@@ -180,9 +189,11 @@ export function renderSummary(ctx) {
       sum.endReason === 'time' ? h('p', { class: 'bad' }, 'Έληξε ο χρόνος.') : null,
       sum.endReason === 'abort' ? h('p', { class: 'muted' }, 'Σταμάτησες το τεστ πριν τελειώσει.') : null,
       sum.completed && sum.mode === MODES.due ? h('p', { class: 'ok' }, 'Η σημερινή εξάσκηση ολοκληρώθηκε ✓') : null,
-      sum.completed && (sum.mode === MODES.tomorrow || sum.mode === MODES.wrong) ? h('p', { class: 'ok' }, 'Τα καθάρισες όλα ✓') : null,
+      sum.completed && (sum.mode === MODES.tomorrow || sum.mode === MODES.wrong || sum.mode === MODES.marathon) ? h('p', { class: 'ok' }, 'Τα καθάρισες όλα ✓') : null,
+      sum.mode === MODES.ptest && !sum.passed && sum.endReason === 'done' ? h('p', { class: 'muted small' }, 'Το τεστ περνάει μόνο με 100 %. Ξαναδοκίμασέ το μέχρι να το καθαρίσεις.') : null,
       deltas),
     wrongs.length ? h('div', { class: 'card' }, h('h3', null, 'Λάθη'), h('div', { class: 'list' }, wrongs.map((id) => { const q = byId.get(id); return h('a', { class: 'qrow', href: `#/q/${id}` }, h('span', { class: 'id' }, `#${id}`), h('span', { class: 'txt' }, q ? q.text : '')); }))) : null,
+    h('div', { style: { margin: '10px 0' } }, continueBtn),
     h('div', { class: 'btn-row' }, h('a', { class: 'btn', href: '#/' }, 'Αρχική'), again),
   ]);
   return wrap;

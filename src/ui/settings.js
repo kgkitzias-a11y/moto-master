@@ -156,7 +156,7 @@ export function renderSettings(ctx) {
       h('input', { type: 'date', value: s.examDate || '', onChange: (e) => p.updateSettings({ examDate: e.target.value || null }) }),
       h('label', null, 'Ημερήσιος στόχος απαντήσεων'),
       h('input', { type: 'number', inputmode: 'numeric', min: 10, max: 400, step: 10, value: s.dailyGoal || 40, onChange: (e) => p.updateSettings({ dailyGoal: Math.max(10, Math.min(400, Number(e.target.value) || 40)) }) }),
-      h('p', { class: 'small muted' }, 'Ο στόχος και το σερί μετράνε τη σημερινή εξάσκηση («Σήμερα»)· χάνεις το σερί αν δεν την ολοκληρώσεις μέχρι τα μεσάνυχτα.'),
+      h('p', { class: 'small muted' }, 'Η μέρα μετράει στο σερί όταν πιάσεις τον στόχο απαντήσεων ή ολοκληρώσεις τη σημερινή εξάσκηση («Σήμερα»)· αλλιώς το σερί χάνεται τα μεσάνυχτα.'),
       h('label', null, 'Εμφάνιση'),
       h('select', { onChange: (e) => p.updateSettings({ theme: e.target.value }) },
         [['dark', 'Σκούρο (προτείνεται για συγκέντρωση)'], ['light', 'Ανοιχτό'], ['auto', 'Αυτόματο (συστήματος)']].map(([v, l]) => h('option', { value: v, selected: (s.theme || 'dark') === v }, l))),

@@ -13,7 +13,7 @@ async function evalRetry(page, fn) {
 test('app shell and questions load with the network offline', async ({ page, context }) => {
   acceptDialogs(page);
   await page.goto('/#/');
-  await page.locator('.modes').waitFor();
+  await page.locator('.modes').first().waitFor();
 
   await expect.poll(() => evalRetry(page, () => navigator.serviceWorker.ready.then((r) => !!r.active)), { timeout: 30_000 }).toBe(true);
   await expect.poll(() => evalRetry(page, () => !!navigator.serviceWorker.controller), { timeout: 30_000 }).toBe(true);
@@ -26,12 +26,12 @@ test('app shell and questions load with the network offline', async ({ page, con
   }), { timeout: 30_000, message: 'data/questions.json must be cached by the service worker' }).toBe(true);
   // The shell itself must be cached too.
   expect(await page.evaluate(async () => !!(await caches.match('./index.html')) || !!(await caches.match('./')))).toBe(true);
-  await page.locator('.modes').waitFor();
+  await page.locator('.modes').first().waitFor();
 
   await context.setOffline(true);
   try {
     await page.reload();
-    await page.locator('.modes').waitFor({ timeout: 20_000 });
+    await page.locator('.modes').first().waitFor({ timeout: 20_000 });
     await expect(page.locator('#view')).not.toContainText('Σφάλμα εκκίνησης');
     await expect(page.locator('.mode[data-mode="gauntlet139"] .n')).toHaveText('140 ερωτήσεις');
     await expect(page.locator('#view')).toContainText('0/140 ερωτήσεις');
@@ -48,5 +48,5 @@ test('app shell and questions load with the network offline', async ({ page, con
     await context.setOffline(false);
   }
   await page.goto('/#/');
-  await page.locator('.modes').waitFor();
+  await page.locator('.modes').first().waitFor();
 });

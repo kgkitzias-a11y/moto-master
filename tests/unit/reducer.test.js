@@ -392,9 +392,14 @@ describe('reducer: isSolid / isMastered / mastery', () => {
 
 describe('reducer: readiness', () => {
   const mock = (t, correct, over = {}) => session(t, 'exam', { n: 10, c: correct, w: correct === 10 ? [] : [1], x: { timed: true, passed: correct >= 9, completed: true }, ...over });
+  const hardMock = (t, correct, over = {}) => session(t, 'hardexam', { n: 10, c: correct, w: correct === 10 ? [] : [1], x: { timed: true, passed: correct === 10, completed: true }, ...over });
   const NOW = T0 + 30 * D;
   function allMastered() {
     return BOOKLET_IDS.flatMap((id) => promoteN(id, MIDNIGHT, 10, { ms: 2000 }));
+  }
+  // The 5th gate: RULES.READY_HARD_EXAMS perfect timed hard simulators (3).
+  function hardPass(n = RULES.READY_HARD_EXAMS) {
+    return Array.from({ length: n }, (_, i) => hardMock(NOW - D + 2 * H + i * H, 10));
   }
   function fullPass() {
     return [
@@ -402,20 +407,55 @@ describe('reducer: readiness', () => {
       mock(NOW - 4 * D, 10), mock(NOW - 4 * D + H, 10), mock(NOW - 3 * D, 10), mock(NOW - 2 * D, 10), mock(NOW - 2 * D + H, 10),
       session(NOW - D, 'gauntlet139', { n: BOOKLET_IDS.length, c: BOOKLET_IDS.length, w: [], x: { completed: true } }),
       session(NOW - D + H, 'sudden', { n: 60, c: 60, x: { run: 60 } }),
+      ...hardPass(),
     ];
   }
 
-  test('all four gates pass → ready', () => {
+  test('all five gates pass → ready', () => {
     const r = readiness(reduce(fullPass(), QUESTIONS), QUESTIONS);
-    assert.ok(r.masteryOk); assert.ok(r.mocksOk); assert.ok(r.gauntletOk); assert.ok(r.suddenOk);
+    assert.ok(r.masteryOk); assert.ok(r.mocksOk); assert.ok(r.gauntletOk); assert.ok(r.suddenOk); assert.ok(r.hardOk);
     assert.ok(r.ready);
     assert.equal(r.consecutivePerfect, 5);
     assert.equal(r.mockDays, 3);
+    assert.equal(r.hardPerfect, 3);
+    assert.equal(r.hardNeeded, RULES.READY_HARD_EXAMS);
   });
 
   test('empty state → not ready and every gate false', () => {
     const r = readiness(reduce([], QUESTIONS), QUESTIONS);
-    assert.ok(!r.ready && !r.masteryOk && !r.mocksOk && !r.gauntletOk && !r.suddenOk);
+    assert.ok(!r.ready && !r.masteryOk && !r.mocksOk && !r.gauntletOk && !r.suddenOk && !r.hardOk);
+    assert.equal(r.hardPerfect, 0);
+  });
+
+  test('hard-exam gate: the other four gates satisfied but only 2 perfect hard exams → ready false, hardOk false; with 3 → ready', () => {
+    const base = fullPass().filter((e) => e.m !== 'hardexam');
+    const two = readiness(reduce([...base, ...hardPass(2)], QUESTIONS), QUESTIONS);
+    assert.ok(two.masteryOk && two.mocksOk && two.gauntletOk && two.suddenOk, 'the other four gates hold');
+    assert.equal(two.hardPerfect, 2);
+    assert.ok(!two.hardOk);
+    assert.ok(!two.ready);
+    const three = readiness(reduce([...base, ...hardPass(3)], QUESTIONS), QUESTIONS);
+    assert.equal(three.hardPerfect, 3);
+    assert.ok(three.hardOk);
+    assert.ok(three.ready);
+    const none = readiness(reduce(base, QUESTIONS), QUESTIONS);
+    assert.ok(!none.ready && !none.hardOk);
+    assert.equal(none.hardPerfect, 0);
+  });
+
+  test('hard-exam gate: only timed, 10-question, 10/10 runs count; failed runs in between do not reset the count', () => {
+    const base = fullPass().filter((e) => e.m !== 'hardexam');
+    const untimed = hardPass(3).map((e) => ({ ...e, x: { ...e.x, timed: false } }));
+    assert.ok(!readiness(reduce([...base, ...untimed], QUESTIONS), QUESTIONS).hardOk, 'untimed');
+    const short = hardPass(3).map((e) => ({ ...e, n: 9, c: 9 }));
+    assert.ok(!readiness(reduce([...base, ...short], QUESTIONS), QUESTIONS).hardOk, 'total !== 10');
+    const mixed = [...base, hardMock(NOW - D + 2 * H, 10), hardMock(NOW - D + 3 * H, 9), hardMock(NOW - D + 4 * H, 10), hardMock(NOW - D + 5 * H, 8), hardMock(NOW - D + 6 * H, 10)];
+    const r = readiness(reduce(mixed, QUESTIONS), QUESTIONS);
+    assert.equal(r.hardPerfect, 3, 'perfect hard exams are counted, not required to be consecutive');
+    assert.ok(r.hardOk && r.ready);
+    // ordinary mocks never satisfy the hard gate and vice versa
+    const asExam = hardPass(3).map((e) => ({ ...e, m: 'exam' }));
+    assert.ok(!readiness(reduce([...base, ...asExam], QUESTIONS), QUESTIONS).hardOk);
   });
 
   test('mastery gate: one booklet question not mastered → masteryOk false', () => {
@@ -508,8 +548,13 @@ describe('reducer: determinism', () => {
         evs.push({ id, t, k: 'answer', q: qq.id, ch, ok, ms: Math.floor(rnd() * 20000), m: pick(['practice', 'exam', 'speed', 'recall', 'hard']), s: `s${i % 7}`,
           cf: pick([null, 'sure', 'unsure']), sh: rnd() < 0.8, tl: rnd() < 0.2 ? 5000 : null, hd: rnd() < 0.2, rc: rnd() < 0.1 });
       } else {
-        const m = pick(['exam', 'gauntlet139', 'gauntlet172', 'sudden', 'due', 'practice']);
-        evs.push({ id, t, k: 'session', s: `s${i}`, m, n: 10, c: Math.floor(rnd() * 11), w: [], d: 1000, x: { timed: rnd() < 0.5, completed: rnd() < 0.5, run: Math.floor(rnd() * 70) } });
+        const m = pick(['exam', 'gauntlet139', 'gauntlet172', 'sudden', 'due', 'practice', 'ptest', 'hardexam', 'goal', 'marathon']);
+        const c = Math.floor(rnd() * 11);
+        const x = { timed: rnd() < 0.5, completed: rnd() < 0.5, run: Math.floor(rnd() * 70) };
+        if (m === 'ptest') { x.set = pick([-1, 0, 1, 2]); x.score = c; x.passed = c === 10; }
+        if (m === 'hardexam') x.passed = c === 10;
+        if (m === 'goal' || rnd() < 0.2) x.goalReached = rnd() < 0.6;
+        evs.push({ id, t, k: 'session', s: `s${i}`, m, n: 10, c, w: [], d: 1000, x });
       }
     }
     // A few events share a timestamp to exercise the (t, id) tie-break.
@@ -522,5 +567,126 @@ describe('reducer: determinism', () => {
       for (let i = sh.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [sh[i], sh[j]] = [sh[j], sh[i]]; }
       assert.equal(JSON.stringify(reduce(sh, QUESTIONS)), canon, `shuffle #${k + 1}`);
     }
+  });
+});
+
+// ---------- Genie-style additions: practice tests, hard simulators, goal days ----------
+import { sanitizeEvent } from '../../src/engine/events.js';
+import { uuid } from '../../src/engine/shuffle.js';
+
+describe('reducer: practice tests (ptests) and hard simulators (hardMocks)', () => {
+  const ptest = (t, set, score, over = {}) => session(t, 'ptest', { n: 20, c: score, w: score === 20 ? [] : [1], x: { completed: true, endReason: 'done', set, score, passed: score === 20 }, ...over });
+  const hardMock = (t, correct, over = {}) => session(t, 'hardexam', { n: 10, c: correct, w: correct === 10 ? [] : [1], x: { timed: true, passed: correct === 10, completed: true }, ...over });
+
+  test('ptest sessions update state.ptests[set]: best = max correct, attempts count, passed sticks once any run passed', () => {
+    const evs = [ptest(T0, 0, 15), ptest(T0 + H, 0, 18), ptest(T0 + 2 * H, 0, 12), ptest(T0 + 3 * H, 1, 20), ptest(T0 + 4 * H, 1, 17)];
+    const st = reduce(evs, QUESTIONS);
+    assert.deepEqual(Object.keys(st.ptests).sort(), ['0', '1']);
+    assert.equal(st.ptests[0].best, 18);
+    assert.equal(st.ptests[0].attempts, 3);
+    assert.equal(st.ptests[0].passed, false);
+    assert.equal(st.ptests[0].last, T0 + 2 * H);
+    assert.equal(st.ptests[0].total, 20);
+    assert.equal(st.ptests[1].best, 20);
+    assert.equal(st.ptests[1].attempts, 2);
+    assert.equal(st.ptests[1].passed, true, 'a later 17/20 does not un-pass the set');
+    assert.equal(st.sessions.length, 5, 'every ptest also lands in the generic session list');
+    assert.equal(st.mocks.length, 0);
+    assert.equal(st.hardMocks.length, 0);
+  });
+
+  test('ptest: the archive test is keyed -1; a missing x.set falls back to 0; best never decreases', () => {
+    const st = reduce([ptest(T0, -1, 9, { n: 19 }), ptest(T0 + H, -1, 19, { n: 19 }), session(T0 + 2 * H, 'ptest', { n: 20, c: 7, x: {} })], QUESTIONS);
+    assert.equal(st.ptests[-1].best, 19);
+    assert.equal(st.ptests[-1].attempts, 2);
+    assert.equal(st.ptests[-1].total, 19);
+    assert.equal(st.ptests[-1].passed, false, 'passed comes from x.passed, not from the score');
+    assert.equal(st.ptests[0].best, 7);
+    assert.equal(st.ptests[0].attempts, 1);
+    assert.equal(st.ptests[0].passed, false);
+  });
+
+  test('hardexam sessions land in state.hardMocks with passed/timed (never in mocks)', () => {
+    const evs = [hardMock(T0, 10), hardMock(T0 + H, 9), hardMock(T0 + 2 * H, 10, { x: { timed: false, passed: true } })];
+    const st = reduce(evs, QUESTIONS);
+    assert.equal(st.hardMocks.length, 3);
+    assert.equal(st.mocks.length, 0);
+    assert.deepEqual(st.hardMocks.map((m) => m.passed), [true, false, true]);
+    assert.deepEqual(st.hardMocks.map((m) => m.timed), [true, true, false]);
+    assert.deepEqual(st.hardMocks.map((m) => m.correct), [10, 9, 10]);
+    assert.deepEqual(st.hardMocks.map((m) => m.total), [10, 10, 10]);
+    assert.equal(st.hardMocks[1].wrongs.length, 1);
+    assert.equal(st.hardMocks[0].mode, 'hardexam');
+    const r = readiness(st, QUESTIONS);
+    assert.equal(r.hardPerfect, 1, 'only timed 10/10 runs count');
+    assert.ok(!r.hardOk);
+    // missing x → not passed, not timed
+    const bare = reduce([session(T0, 'hardexam', { n: 10, c: 10 })], QUESTIONS);
+    assert.equal(bare.hardMocks[0].passed, false);
+    assert.equal(bare.hardMocks[0].timed, false);
+  });
+
+  test('emptyState carries ptests {} and hardMocks []', () => {
+    const st = reduce([], QUESTIONS);
+    assert.deepEqual(st.ptests, {});
+    assert.deepEqual(st.hardMocks, []);
+  });
+});
+
+describe('reducer: goal days (x.goalReached) and the streak', () => {
+  test('a session with x.goalReached adds its day to dueDays (any mode), once per day', () => {
+    const evs = [
+      session(T0, 'goal', { n: 7, c: 6, x: { completed: true, goalReached: true } }),
+      session(T0 + H, 'practice', { n: 3, c: 3, x: { completed: false, goalReached: true } }), // same day → no duplicate
+      session(T0 + D, 'practice', { n: 3, c: 3, x: { completed: true } }),                    // no flag → no day
+      session(T0 + 2 * D, 'exam', { n: 10, c: 10, x: { timed: true, passed: true, goalReached: true } }),
+      session(T0 + 3 * D, 'goal', { n: 5, c: 5, x: { completed: true, goalReached: false } }), // explicit false → no day
+    ];
+    const st = reduce(evs, QUESTIONS);
+    assert.deepEqual(st.dueDays, [dayKey(T0), dayKey(T0 + 2 * D)]);
+    assert.equal(st.mocks.length, 1, 'the exam is still filed as a mock');
+  });
+
+  test('dueStreak counts goal days like completed daily drills (mixed chain)', () => {
+    const now = T0 + 5 * D;
+    const evs = [
+      session(now, 'goal', { x: { completed: true, goalReached: true } }),
+      session(now - D, 'due', { x: { completed: true } }),
+      session(now - 2 * D, 'adaptive', { x: { completed: true, goalReached: true } }),
+    ];
+    const st = reduce(evs, QUESTIONS);
+    assert.equal(st.dueDays.length, 3);
+    assert.equal(dueStreak(st, now), 3);
+    // the goal day alone gives a streak of 1
+    const one = reduce([session(now, 'goal', { x: { completed: false, goalReached: true } })], QUESTIONS);
+    assert.equal(dueStreak(one, now), 1);
+    // a goal day yesterday + nothing today → 1 (counted from yesterday)
+    const y = reduce([session(now - D, 'practice', { x: { goalReached: true } })], QUESTIONS);
+    assert.equal(dueStreak(y, now), 1);
+  });
+});
+
+describe('reducer: sanitizeEvent keeps the new session x keys', () => {
+  const NOW_S = Date.UTC(2026, 8, 14, 12);
+  test('x.set / x.score / x.goalReached survive; unknown x keys are dropped', () => {
+    const e = { id: uuid(), t: NOW_S - 5, k: 'session', s: 'sid', m: 'ptest', n: 20, c: 19, w: [3], d: 60000,
+      x: { completed: true, endReason: 'done', set: 2, score: 19, passed: false, goalReached: true, evil: 'y', foo: 1, hint: 'x' } };
+    const c = sanitizeEvent(e, NOW_S);
+    assert.deepEqual(c.x, { completed: true, passed: false, goalReached: true, set: 2, score: 19, endReason: 'done' });
+    assert.equal('evil' in c.x, false);
+    // archive set (-1) is kept; out-of-range/non-integer set and negative score are dropped; booleans are coerced
+    const a = sanitizeEvent({ ...e, x: { set: -1, score: 4, goalReached: 1 } }, NOW_S);
+    assert.deepEqual(a.x, { goalReached: true, set: -1, score: 4 });
+    const bad = sanitizeEvent({ ...e, x: { set: -2, score: -1, goalReached: 0 } }, NOW_S);
+    assert.deepEqual(bad.x, { goalReached: false });
+    const nonInt = sanitizeEvent({ ...e, x: { set: 1.5, score: '19', goalReached: 'yes' } }, NOW_S);
+    assert.deepEqual(nonInt.x, { goalReached: true });
+    const huge = sanitizeEvent({ ...e, x: { set: 1000 } }, NOW_S);
+    assert.deepEqual(huge.x, {});
+    // the sanitized copy still reduces to a ptest record
+    const st = reduce([c], QUESTIONS);
+    assert.equal(st.ptests[2].best, 19);
+    assert.equal(st.ptests[2].passed, false);
+    assert.deepEqual(st.dueDays, [dayKey(c.t)]);
   });
 });

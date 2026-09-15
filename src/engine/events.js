@@ -38,8 +38,10 @@ export function sanitizeEvent(e, now = Date.now()) {
     out.d = num(e.d, 86400000) ?? 0;
     const x = e.x && typeof e.x === 'object' && !Array.isArray(e.x) ? e.x : {};
     out.x = {};
-    for (const k of ['completed', 'passed', 'timed', 'zeroed']) if (k in x) out.x[k] = !!x[k];
+    for (const k of ['completed', 'passed', 'timed', 'zeroed', 'goalReached']) if (k in x) out.x[k] = !!x[k];
     if ('run' in x && int(x.run) !== null && x.run >= 0) out.x.run = x.run;
+    if ('set' in x && int(x.set) !== null && x.set >= -1 && x.set < 1000) out.x.set = x.set;
+    if ('score' in x && int(x.score) !== null && x.score >= 0) out.x.score = x.score;
     if (typeof x.endReason === 'string' && x.endReason.length <= 16) out.x.endReason = x.endReason;
   }
   return out;

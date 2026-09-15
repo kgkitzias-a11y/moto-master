@@ -45,7 +45,7 @@ test('index.html carries the PWA/robots meta tags and links the manifest', async
 
 test('service worker registers and the footer shows the version', async ({ page }) => {
   await page.goto('/#/');
-  await page.locator('.modes').waitFor();
+  await page.locator('.modes').first().waitFor();
   await expect(page.locator('#version-stamp')).toHaveText(/^Moto Master v\d+\.\d+\.\d+$/);
   await expect(page.locator('footer')).toContainText('Moto Master v');
 
@@ -64,6 +64,6 @@ test('service worker registers and the footer shows the version', async ({ page 
     } catch { return null; }
   }, { timeout: 30_000 }).toMatchObject({ active: true, scope: 'http://127.0.0.1:8123/', url: 'http://127.0.0.1:8123/sw.js' });
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller).catch(() => false), { timeout: 30_000 }).toBe(true);
-  await page.locator('.modes').waitFor();
+  await page.locator('.modes').first().waitFor();
   await expect(page.locator('#version-stamp')).toHaveText(/^Moto Master v/);
 });

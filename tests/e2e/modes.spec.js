@@ -1,10 +1,13 @@
 // Every mode in MODE_LIST is started and driven to completion or a valid end.
 import { test, expect } from '@playwright/test';
-import { MODE_LIST, modeMeta } from '../../src/ui/modes.js';
+import { MODE_LIST, SECTIONS, modeMeta } from '../../src/ui/modes.js';
 import {
   acceptDialogs, gotoHome, gotoHash, clickMode, answerOne, clickNext, endSession, drive,
-  makeOneWrongAnswer, startPracticeSequential, summaryScore,
+  makeOneWrongAnswer, startPracticeSequential, summaryScore, fetchQuestions, answerKnown,
 } from './helpers.js';
+
+// The app's "number/limit" matcher (selection.js NUM_RE).
+const NUM_RE = /\d|km\/h|cm|\bm\b|cc\b|%|°/;
 
 async function expectSummary(page, id) {
   await expect(page).toHaveURL(/#\/summary$/);
@@ -215,6 +218,98 @@ const drivers = {
     const s = await expectSummary(page, 'recall');
     expect(s).toEqual({ correct: 1, answered: 1 });
   },
+
+  async hardexam(page) {
+    const { byId } = await fetchQuestions(page);
+    await clickMode(page, 'hardexam');
+    await expect(page).toHaveURL(/#\/session$/);
+    await expect(page.locator('.session-top')).toContainText('Σκληρή προσομοίωση · 1/10');
+    await expect(page.locator('#clock')).toHaveText(/^[45]:\d\d$/); // 5-minute session timer visible
+    await expect(page.locator('.timerbar')).not.toHaveClass(/hidden/);
+    // Run 1: the very first answer is wrong → zero tolerance → ΚΟΠΗΚΕΣ, but only at the end (no feedback in between).
+    for (let i = 0; i < 10; i++) {
+      await expect(page.locator('.session-top')).toContainText(`${i + 1}/10`);
+      await answerKnown(page, byId, i !== 0, { feedback: false });
+      await expect(page.locator('.feedback')).toHaveCount(0);
+    }
+    let s = await expectSummary(page, 'hardexam');
+    expect(s).toEqual({ correct: 9, answered: 10 });
+    await expect(page.locator('.verdict-big')).toHaveText('ΚΟΠΗΚΕΣ');
+    await expect(page.locator('#view')).toContainText('1 λάθος');
+    // Run 2: all ten right → ΠΕΡΑΣΕΣ.
+    await page.getByRole('button', { name: 'Ξανά' }).click();
+    await expect(page).toHaveURL(/#\/session$/);
+    for (let i = 0; i < 10; i++) {
+      await expect(page.locator('.session-top')).toContainText(`${i + 1}/10`);
+      await answerKnown(page, byId, true, { feedback: false });
+      await expect(page.locator('.feedback')).toHaveCount(0);
+    }
+    s = await expectSummary(page, 'hardexam');
+    expect(s).toEqual({ correct: 10, answered: 10 });
+    await expect(page.locator('.verdict-big')).toHaveText('ΠΕΡΑΣΕΣ');
+    // Both runs are hard simulators on the readiness card (1 perfect out of 3 needed).
+    await gotoHome(page);
+    await expect(page.locator('.readiness li', { hasText: 'Σκληρές προσομοιώσεις' })).toContainText('(τώρα: 1)');
+  },
+
+  async hardest(page) {
+    // Fresh profile: nothing is known yet → the card is disabled and explains why.
+    const card = await clickMode(page, 'hardest');
+    await expect(card).toHaveClass(/disabled/);
+    await expect(card.locator('.n')).toHaveText('0 ερωτήσεις');
+    await expect(page.locator('.toast')).toHaveText('Απάντησε πρώτα μερικές ερωτήσεις για να φανεί ποιες σε δυσκολεύουν.');
+    await expect(page).not.toHaveURL(/#\/session$/);
+    // A few practice answers including at least one wrong → the mode has material.
+    await makeOneWrongAnswer(page);
+    await gotoHome(page);
+    await expect(card).not.toHaveClass(/disabled/);
+    await expect(card.locator('.n')).toHaveText(/^[1-9]\d* ερωτήσεις$/);
+    await card.click();
+    await expect(page).toHaveURL(/#\/session$/);
+    await expect(page.locator('.session-top')).toContainText(/Οι πιο δύσκολες · 1\/[1-9]\d*/);
+    let answered = 0, done = false;
+    for (let i = 0; i < 3 && !done; i++) { await answerOne(page); answered++; done = await clickNext(page); }
+    if (!done) await endSession(page);
+    const s = await expectSummary(page, 'hardest');
+    expect(s.answered).toBe(answered);
+  },
+
+  async numbers(page) {
+    const card = await clickMode(page, 'numbers');
+    await expect(card).not.toHaveClass(/disabled/);
+    await expect(page).toHaveURL(/#\/session$/);
+    await expect(page.locator('.session-top')).toContainText(/Αριθμοί & όρια · 1\/[1-9]\d*/);
+    await page.locator('button.opt').first().waitFor();
+    const text = await page.locator('.qtext').innerText();
+    const opts = await page.locator('button.opt').allInnerTexts();
+    expect([text, ...opts].some((t) => NUM_RE.test(t))).toBe(true);
+    const r = await drive(page, { max: 3 });
+    expect(r.answered).toBe(3);
+    const s = await expectSummary(page, 'numbers');
+    expect(s.answered).toBe(3);
+  },
+
+  async marathon(page) {
+    const { byId, meta } = await fetchQuestions(page);
+    await clickMode(page, 'marathon');
+    await expect(page).toHaveURL(/#\/session$/);
+    await expect(page.locator('.session-top')).toContainText(`Μαραθώνιος · 1/${meta.booklet}`);
+    // A wrong answer is re-queued: the total grows by one and the session goes on.
+    expect(await answerKnown(page, byId, false)).toMatch(/^Λάθος/);
+    expect(await clickNext(page)).toBe(false);
+    await expect(page.locator('.session-top')).toContainText(`2/${meta.booklet + 1}`);
+    expect(await answerKnown(page, byId, true)).toMatch(/^Σωστό/);
+    expect(await clickNext(page)).toBe(false);
+    expect(await answerKnown(page, byId, true)).toMatch(/^Σωστό/);
+    expect(await clickNext(page)).toBe(false);
+    await expect(page).toHaveURL(/#\/session$/);
+    await expect(page.locator('.session-top')).toContainText(`4/${meta.booklet + 1}`);
+    await endSession(page);
+    const s = await expectSummary(page, 'marathon');
+    expect(s).toEqual({ correct: 2, answered: 3 });
+    await expect(page.locator('#view')).toContainText('Σταμάτησες το τεστ πριν τελειώσει.');
+    await expect(page.locator('#view')).not.toContainText('Τα καθάρισες όλα');
+  },
 };
 
 test.describe('modes', () => {
@@ -224,7 +319,7 @@ test.describe('modes', () => {
     expect(ids.sort()).toEqual(Object.keys(drivers).sort());
   });
 
-  test('home shows one card per mode', async ({ page }) => {
+  test('home shows one card per mode, grouped in the four sections, with the 5-gate readiness list', async ({ page }) => {
     await gotoHome(page);
     for (const m of MODE_LIST) {
       const card = page.locator(`.mode[data-mode="${m.id}"]`);
@@ -232,6 +327,17 @@ test.describe('modes', () => {
       await expect(card.locator('.t')).toHaveText(m.title);
     }
     await expect(page.locator('.mode')).toHaveCount(MODE_LIST.length);
+    expect(SECTIONS.map((s) => s.title)).toEqual(['Εξετάσεις', 'Επανάληψη', 'Εξάσκηση', 'Σκληρά τεστ']);
+    await expect(page.locator('.modes')).toHaveCount(SECTIONS.length);
+    for (const [i, sec] of SECTIONS.entries()) {
+      await expect(page.locator('#view h2', { hasText: new RegExp(`^${sec.title}$`) })).toHaveCount(1); // exact: «Τεστ εξάσκησης» also contains «εξάσκηση»
+      const grid = page.locator('.modes').nth(i);
+      await expect(grid.locator('.mode')).toHaveCount(sec.modes.length);
+      for (const m of sec.modes) await expect(grid.locator(`.mode[data-mode="${m.id}"]`)).toHaveCount(1);
+    }
+    await expect(page.locator('.readiness li')).toHaveCount(5);
+    await expect(page.locator('.readiness li').nth(4)).toContainText('τέλειες «Σκληρές προσομοιώσεις» (τώρα: 0)');
+    await expect(page.locator('.ptest')).toHaveCount(7);
   });
 
   for (const m of MODE_LIST) {

@@ -20,6 +20,12 @@ export const PRESETS = {
   [MODES.tomorrow]:    { label: 'Αύριο εξετάσεις', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
   [MODES.signs]:       { label: 'Μόνο σήματα', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
   [MODES.recall]:      { label: 'Από μνήμης', timerMs: null, perQuestionMs: null, shuffle: false, feedback: 'immediate', endRule: 'queue', loop: false, recall: true },
+  [MODES.goal]:        { label: 'Προς τον στόχο', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.ptest]:       { label: 'Τεστ εξάσκησης', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.marathon]:    { label: 'Μαραθώνιος', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
+  [MODES.hardest]:     { label: 'Οι πιο δύσκολες', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.numbers]:     { label: 'Αριθμοί & όρια', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.hardexam]:    { label: 'Σκληρή προσομοίωση', timerMs: RULES.HARD_EXAM_TIME_MS, perQuestionMs: null, shuffle: true, feedback: 'end', endRule: 'queue', loop: false, maxWrong: RULES.HARD_EXAM_MAX_WRONG },
 };
 
 // Builds the initial queue for a mode. `params` carries mode-specific choices.
@@ -50,6 +56,12 @@ export function buildQueue(mode, questions, state, settings, now, params = {}, r
       const p = params.policy || 'random';
       return p === 'sequential' ? sel.sequential(pool) : sel.random(pool, params.count || 20, rnd);
     }
+    case MODES.goal: return sel.towardGoal(pool, state, now, params.remaining || 20, rnd);
+    case MODES.ptest: return sel.practiceTest(questions, params.set === undefined ? 0 : params.set, rnd);
+    case MODES.marathon: return sel.random(pool, 0, rnd);
+    case MODES.hardest: return sel.hardest(pool, state, params.count || RULES.HARDEST_COUNT, rnd);
+    case MODES.numbers: return sel.numbers(pool, rnd);
+    case MODES.hardexam: return sel.random(bookletPool, RULES.EXAM_QUESTIONS, rnd);
     default: throw new Error(`unknown mode ${mode}`);
   }
 }
@@ -59,6 +71,7 @@ export class Session {
     this.id = uuid();
     this.mode = mode;
     this.preset = { ...PRESETS[mode], ...(params.presetOverride || {}) };
+    this.params = params;
     this.settings = settings;
     this.rnd = rnd;
     this.byId = new Map(questions.map((q) => [q.id, q]));
@@ -162,21 +175,26 @@ export class Session {
     const answered = this.results.length;
     const wrong = this.wrongs.length;
     const completed = this.endReason === 'done' || (this.preset.endRule === 'zeroed' && this.pending.size === 0 && answered > 0);
-    const passed = this.mode === MODES.exam ? (this.endReason !== 'time' && answered === this.queue.length && wrong <= RULES.EXAM_MAX_WRONG) : null;
+    let passed = null;
+    if (this.mode === MODES.exam) passed = this.endReason !== 'time' && answered === this.queue.length && wrong <= RULES.EXAM_MAX_WRONG;
+    else if (this.mode === MODES.hardexam) passed = this.endReason !== 'time' && answered === this.queue.length && wrong <= RULES.HARD_EXAM_MAX_WRONG;
+    else if (this.mode === MODES.ptest) passed = this.endReason === 'done' && answered > 0 && (this.correctCount / answered) >= RULES.PTEST_PASS;
     let run = null;
     if (this.mode === MODES.sudden) run = this.correctCount;
-    return { mode: this.mode, sid: this.id, answered, total: this.queue.length, correct: this.correctCount, wrong, wrongs: [...this.wrongs], durationMs: (this.endedAt || this._now || this.startedAt) - this.startedAt, completed, passed, run, endReason: this.endReason, timed: this.timed };
+    return { mode: this.mode, params: this.params, sid: this.id, answered, total: this.queue.length, correct: this.correctCount, wrong, wrongs: [...this.wrongs], durationMs: (this.endedAt || this._now || this.startedAt) - this.startedAt, completed, passed, run, endReason: this.endReason, timed: this.timed };
   }
 
-  sessionEvent(now = Date.now()) {
+  sessionEvent(now = Date.now(), extra = {}) {
     const s = this.summary();
     if (s.answered === 0) return null;
     const x = { completed: s.completed, endReason: s.endReason };
+    if (extra.goalReached) x.goalReached = true; // the day's answer goal was hit during this session
     if (s.passed !== null) x.passed = s.passed;
-    if (this.mode === MODES.exam) x.timed = this.timed;
+    if (this.mode === MODES.exam || this.mode === MODES.hardexam) x.timed = this.timed;
+    if (this.mode === MODES.ptest) { x.set = this.params.set === 'archive' ? -1 : (this.params.set || 0); x.score = s.correct; }
     if (s.run !== null) x.run = s.run;
     if (this.mode === MODES.due) x.zeroed = s.completed;
-    return { id: uuid(), t: now, k: 'session', s: this.id, m: this.mode, n: this.mode === MODES.exam || this.mode.startsWith('gauntlet') ? this.pool.length : s.answered, c: s.correct, w: [...new Set(s.wrongs)], d: s.durationMs, x };
+    return { id: uuid(), t: now, k: 'session', s: this.id, m: this.mode, n: [MODES.exam, MODES.hardexam, MODES.ptest].includes(this.mode) || this.mode.startsWith('gauntlet') ? this.pool.length : s.answered, c: s.correct, w: [...new Set(s.wrongs)], d: s.durationMs, x };
   }
 }
 

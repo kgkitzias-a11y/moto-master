@@ -30,6 +30,8 @@ export function emptyState() {
   return {
     q: {}, mocks: [], gauntlet139: [], gauntlet172: [],
     sudden: { best: 0, runs: [] }, dueDays: [], sessions: [],
+    ptests: {},        // set → { best, attempts, passed, last }
+    hardMocks: [],     // hard simulator runs
     counts: { events: 0, answers: 0 },
     resetAt: null,
   };
@@ -141,11 +143,19 @@ function applySession(state, e) {
     const run = (e.x && Number.isFinite(e.x.run)) ? e.x.run : rec.correct;
     state.sudden.runs.push({ t: e.t, run });
     if (run > state.sudden.best) state.sudden.best = run;
-  } else if (e.m === 'due') {
-    if (e.x && e.x.completed) {
-      const d = dayKey(e.t);
-      if (!state.dueDays.includes(d)) state.dueDays.push(d);
-    }
+  } else if (e.m === 'hardexam') {
+    state.hardMocks.push({ ...rec, passed: !!(e.x && e.x.passed), timed: !!(e.x && e.x.timed) });
+  } else if (e.m === 'ptest') {
+    const set = e.x && Number.isInteger(e.x.set) ? e.x.set : 0;
+    const p = state.ptests[set] || (state.ptests[set] = { best: 0, attempts: 0, passed: false, last: null, total: 0 });
+    p.attempts++; p.last = e.t; p.total = Math.max(p.total, rec.total);
+    if (rec.correct > p.best) p.best = rec.correct;
+    if (e.x && e.x.passed) p.passed = true;
+  }
+  // A day counts for the streak when the daily drill was completed OR the answer goal was reached.
+  if ((e.m === 'due' && e.x && e.x.completed) || (e.x && e.x.goalReached)) {
+    const d = dayKey(e.t);
+    if (!state.dueDays.includes(d)) state.dueDays.push(d);
   }
 }
 
@@ -214,9 +224,11 @@ export function readiness(state, questions) {
   const gauntletOk = state.gauntlet139.some((g) => g.total === bookletCount && g.wrongs.length === 0 && g.x && g.x.completed);
   const suddenOk = state.sudden.best >= RULES.READY_SUDDEN_DEATH;
   const masteryOk = m.total > 0 && m.done === m.total;
+  const hardPerfect = state.hardMocks.filter((x) => x.timed && x.total === RULES.EXAM_QUESTIONS && x.correct === x.total).length;
+  const hardOk = hardPerfect >= RULES.READY_HARD_EXAMS;
   return {
-    ready: masteryOk && mocksOk && gauntletOk && suddenOk,
-    mastery: m, masteryOk,
+    ready: masteryOk && mocksOk && gauntletOk && suddenOk && hardOk,
+    mastery: m, masteryOk, hardOk, hardPerfect, hardNeeded: RULES.READY_HARD_EXAMS,
     mocksOk, consecutivePerfect: consecutive, mockDays, mocksNeeded: RULES.READY_MOCKS, mockDaysNeeded: RULES.READY_MOCK_DAYS,
     gauntletOk, suddenOk, suddenBest: state.sudden.best, suddenNeeded: RULES.READY_SUDDEN_DEATH,
   };

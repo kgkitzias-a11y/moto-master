@@ -9,7 +9,7 @@ export function acceptDialogs(page) {
 
 export async function gotoHome(page) {
   await page.goto('/#/');
-  await page.locator('.modes').waitFor();
+  await page.locator('.modes').first().waitFor();
 }
 
 export async function gotoHash(page, hash) {
@@ -38,6 +38,35 @@ export async function answerOne(page, { feedback = true } = {}) {
   await page.locator('button.opt').first().waitFor();
   await pickConfidence(page);
   await page.locator('button.opt').first().click();
+  if (!feedback) return null;
+  const fb = page.locator('.feedback');
+  await fb.waitFor();
+  return (await fb.locator('.verdict').innerText()).trim();
+}
+
+// Loads the dataset the app serves: { meta, questions, byId }.
+export async function fetchQuestions(page) {
+  const data = await (await page.request.get('/data/questions.json')).json();
+  return { meta: data.meta, questions: data.questions, byId: new Map(data.questions.map((q) => [q.id, q])) };
+}
+
+// Id of the question currently on screen (from the "#N · category" line).
+export async function currentQuestionId(page) {
+  const qid = page.locator('.qid span').first();
+  await qid.waitFor();
+  const m = (await qid.innerText()).match(/#(\d+)/);
+  if (!m) throw new Error('no question id on screen');
+  return Number(m[1]);
+}
+
+// Answers the current question deliberately right or wrong. Options are shuffled on screen, so the
+// correct one is located through data-orig (the printed index) and the dataset.
+export async function answerKnown(page, byId, right, { feedback = true } = {}) {
+  await page.locator('button.opt').first().waitFor();
+  const q = byId.get(await currentQuestionId(page));
+  if (!q) throw new Error('unknown question on screen');
+  const sel = right ? `button.opt[data-orig="${q.correct}"]` : `button.opt:not([data-orig="${q.correct}"])`;
+  await page.locator(sel).first().click();
   if (!feedback) return null;
   const fb = page.locator('.feedback');
   await fb.waitFor();

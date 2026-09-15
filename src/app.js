@@ -9,6 +9,7 @@ import { renderReview, renderQuestion } from './ui/review.js';
 import { renderSettings } from './ui/settings.js';
 import { renderCertification } from './ui/certification.js';
 import { renderModeSetup } from './ui/setup.js';
+import { renderSheet } from './ui/sheet.js';
 import { applyTheme } from './ui/fx.js';
 
 export const ctx = {
@@ -49,7 +50,7 @@ function consumePairing() {
 const routes = {
   '': renderHome, '/': renderHome,
   '/stats': renderStats, '/review': renderReview, '/settings': renderSettings, '/certification': renderCertification,
-  '/session': renderSession, '/summary': renderSummary,
+  '/session': renderSession, '/summary': renderSummary, '/sheet': renderSheet,
 };
 
 function route() {

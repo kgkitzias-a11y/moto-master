@@ -33,7 +33,7 @@ test('pairing string from A configures B and strips the hash', async ({ browser 
     // Device B: fresh storage, opens the pairing URL.
     expect(await B.evaluate(() => localStorage.getItem('mm.gh.token')).catch(() => null)).toBeFalsy();
     await B.goto(`/#pair=${str}`);
-    await B.locator('.modes').waitFor();
+    await B.locator('.modes').first().waitFor();
     expect(B.url()).not.toContain('#pair');
     expect(B.url()).not.toContain(str);
     expect(await B.evaluate(() => location.hash)).toBe('');
@@ -52,7 +52,7 @@ test('pairing string from A configures B and strips the hash', async ({ browser 
 
     // Reloading B keeps the pairing (token is in localStorage, hash is gone).
     await B.reload();
-    await B.locator('.modes').waitFor();
+    await B.locator('.modes').first().waitFor();
     expect(B.url()).not.toContain('pair');
     await expect(B.locator('#sync-pill')).toHaveText(/^Συγχρονίστηκε/);
   } finally {

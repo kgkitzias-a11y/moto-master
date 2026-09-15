@@ -108,3 +108,52 @@ export function trapPairs(pool, count = 10, rnd = Math.random) {
   }
   return out;
 }
+
+// ---------- Genie-style additions ----------
+import { mulberry32 } from './shuffle.js';
+
+// Fixed partition of the booklet into numbered practice tests (same on every device).
+export function practiceSets(questions) {
+  const booklet = questions.filter((q) => q.tier === 'booklet').map((q) => q.id).sort((a, b) => a - b);
+  const ids = shuffleArray(booklet, mulberry32(RULES.PTEST_SEED));
+  const sets = [];
+  for (let i = 0; i < ids.length; i += RULES.PTEST_SIZE) sets.push(ids.slice(i, i + RULES.PTEST_SIZE));
+  // Small remainder folds into the last set so no test is tiny.
+  if (sets.length > 1 && sets[sets.length - 1].length < RULES.PTEST_SIZE / 2) sets[sets.length - 2].push(...sets.pop());
+  const archive = questions.filter((q) => q.tier === 'archive').map((q) => q.id).sort((a, b) => a - b);
+  return { sets, archive };
+}
+
+export function practiceTest(questions, set, rnd = Math.random) {
+  const { sets, archive } = practiceSets(questions);
+  const ids = set === 'archive' ? archive : (sets[set] || []);
+  return shuffleArray(ids, rnd);
+}
+
+// Your personally hardest questions: lowest accuracy, then most wrongs, then most confusions;
+// unseen questions do not qualify (nothing is known about them yet). Filled up with bin/weak.
+export function hardest(pool, state, count = RULES.HARDEST_COUNT, rnd = Math.random) {
+  const scored = pool.map((q) => { const s = state.q[q.id]; return s && s.seen ? { id: q.id, acc: s.correct / s.seen, wrong: s.wrong, conf: Object.keys(s.confusedWith).length, bin: inBin(s) ? 1 : 0 } : null; }).filter(Boolean);
+  scored.sort((a, b) => (a.acc - b.acc) || (b.wrong - a.wrong) || (b.bin - a.bin) || (b.conf - a.conf));
+  const hard = scored.filter((x) => x.acc < 1 || x.bin).slice(0, count).map((x) => x.id);
+  if (hard.length >= count) return shuffleArray(hard, rnd);
+  const rest = shuffleArray(pool.filter((q) => !hard.includes(q.id) && isWeak(state.q[q.id]) && state.q[q.id] && state.q[q.id].seen).map((q) => q.id), rnd);
+  return [...shuffleArray(hard, rnd), ...rest].slice(0, count);
+}
+
+// Every question whose text or options contain a number/limit (speeds, distances, sizes, %, cc, times).
+const NUM_RE = /\d|km\/h|cm|\bm\b|cc\b|%|°/;
+export function numbers(pool, rnd = Math.random) {
+  return shuffleArray(pool.filter((q) => NUM_RE.test(q.text) || q.options.some((o) => NUM_RE.test(o))).map((q) => q.id), rnd);
+}
+
+// Continue toward today's goal: the daily-drill order, cut to what is still missing (min 5).
+export function towardGoal(pool, state, now, remaining, rnd = Math.random) {
+  const order = dueToday(pool, state, now, rnd);
+  const n = Math.max(5, remaining);
+  if (order.length >= n) return order.slice(0, n);
+  // Everything is on schedule: keep training on the rest of the pool, weakest first.
+  const seen = new Set(order);
+  const filler = adaptive(pool.filter((q) => !seen.has(q.id)), state, now, n - order.length, rnd);
+  return [...order, ...filler];
+}

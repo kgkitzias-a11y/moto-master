@@ -447,12 +447,258 @@ describe('Session engine', () => {
     assert.equal(st.dueDays.length, 1);
   });
 
-  test('all PRESETS have consistent flags (shuffle everywhere except recall; only exam is timed)', () => {
+  test('all PRESETS have consistent flags (shuffle everywhere except recall; only exam and hardexam are timed)', () => {
     for (const [mode, p] of Object.entries(PRESETS)) {
       assert.equal(p.shuffle, mode !== MODES.recall, `${mode}.shuffle`);
-      assert.equal(!!p.timerMs, mode === MODES.exam, `${mode}.timerMs`);
+      assert.equal(!!p.timerMs, mode === MODES.exam || mode === MODES.hardexam, `${mode}.timerMs`);
       assert.equal(!!p.perQuestionMs, mode === MODES.speed, `${mode}.perQuestionMs`);
       assert.ok(['queue', 'zeroed', 'firstWrong'].includes(p.endRule), `${mode}.endRule`);
     }
+  });
+});
+
+// ---------- Genie-style modes ----------
+import { practiceSets } from '../../src/engine/selection.js';
+
+describe('Session engine: Genie-style modes', () => {
+  const Q = genQuestions(12);
+  const correctOf = (s) => s.current().q.correct;
+  const wrongOf = (s) => (s.current().q.correct + 1) % s.current().q.options.length;
+  // Drives a session to its natural end: the first `wrongCount` answers wrong, the rest right.
+  const play = (s, wrongCount, t0 = T0) => {
+    let t = t0, i = 0;
+    while (!s.ended) { t += 2000; s.answer(i < wrongCount ? wrongOf(s) : correctOf(s), { now: t }); i++; }
+    return { answered: i, t };
+  };
+
+  describe('hardexam', () => {
+    const mk = (seed = 1) => startSession(MODES.hardexam, { questions: Q, state: emptyState(), settings: {}, now: T0, rnd: mulberry32(seed) });
+
+    test('preset: 5-minute session timer, maxWrong 0, feedback at the end, 10 booklet questions', () => {
+      assert.equal(PRESETS[MODES.hardexam].timerMs, 5 * 60 * 1000);
+      assert.equal(PRESETS[MODES.hardexam].timerMs, RULES.HARD_EXAM_TIME_MS);
+      assert.equal(PRESETS[MODES.hardexam].maxWrong, 0);
+      assert.equal(PRESETS[MODES.hardexam].feedback, 'end');
+      const s = mk();
+      assert.equal(s.total, RULES.EXAM_QUESTIONS);
+      assert.equal(s.timed, true);
+      assert.equal(s.deadline, T0 + RULES.HARD_EXAM_TIME_MS);
+      assert.equal(new Set(s.queue).size, 10);
+    });
+
+    test('summary().passed is true only with 0 wrong and all 10 answered; 1 wrong -> false (the session still runs to the end)', () => {
+      const ok = mk(1);
+      const r0 = play(ok, 0);
+      assert.equal(r0.answered, 10);
+      assert.equal(ok.endReason, 'done');
+      assert.equal(ok.summary().passed, true);
+      assert.equal(ok.summary().completed, true);
+      const bad = mk(2);
+      const r1 = play(bad, 1);
+      assert.equal(r1.answered, 10, 'no early failure: feedback is deferred to the end');
+      assert.equal(bad.endReason, 'done');
+      assert.equal(bad.summary().wrong, 1);
+      assert.equal(bad.summary().passed, false);
+      // partial: 9 correct then abort -> not passed
+      const part = mk(3);
+      let t = T0;
+      for (let i = 0; i < 9; i++) part.answer(correctOf(part), { now: (t += 1000) });
+      part.abort(t + 1);
+      assert.equal(part.summary().wrong, 0);
+      assert.equal(part.summary().passed, false, 'all 10 must be answered');
+    });
+
+    test('tick past 5 minutes -> session-timeout, passed false', () => {
+      const s = mk(4);
+      s.answer(correctOf(s), { now: T0 + 1000 });
+      assert.equal(s.tick(T0 + RULES.HARD_EXAM_TIME_MS - 1), null);
+      assert.equal(s.tick(T0 + RULES.HARD_EXAM_TIME_MS), 'session-timeout');
+      assert.ok(s.ended);
+      assert.equal(s.endReason, 'time');
+      assert.equal(s.summary().passed, false);
+    });
+
+    test('sessionEvent(): x.timed true, x.passed, n === 10; the reducer files it under hardMocks', () => {
+      const s = mk(5);
+      const { t } = play(s, 0);
+      const ev = s.sessionEvent(t);
+      assert.equal(ev.m, 'hardexam');
+      assert.equal(ev.n, 10);
+      assert.equal(ev.c, 10);
+      assert.deepEqual(ev.w, []);
+      assert.equal(ev.x.timed, true);
+      assert.equal(ev.x.passed, true);
+      assert.equal(ev.x.completed, true);
+      assert.equal(ev.x.goalReached, undefined);
+      const st = reduce([ev], Q);
+      assert.equal(st.hardMocks.length, 1);
+      assert.equal(st.mocks.length, 0, 'not an ordinary mock');
+      assert.equal(st.hardMocks[0].passed, true);
+      assert.equal(st.hardMocks[0].timed, true);
+      assert.equal(st.hardMocks[0].total, 10);
+      const f = mk(6);
+      const r = play(f, 1);
+      const fev = f.sessionEvent(r.t);
+      assert.equal(fev.n, 10);
+      assert.equal(fev.c, 9);
+      assert.equal(fev.x.passed, false);
+      assert.equal(fev.x.timed, true);
+    });
+  });
+
+  describe('ptest (numbered practice test)', () => {
+    const Q40 = genQuestions(40, 5);
+    const { sets, archive } = practiceSets(Q40);
+    const mk = (set, seed = 1) => startSession(MODES.ptest, { questions: Q40, state: emptyState(), settings: {}, now: T0, params: { set }, rnd: mulberry32(seed) });
+
+    test('preset: untimed, immediate feedback; the queue is the fixed set', () => {
+      assert.equal(PRESETS[MODES.ptest].timerMs, null);
+      assert.equal(PRESETS[MODES.ptest].feedback, 'immediate');
+      assert.equal(PRESETS[MODES.ptest].endRule, 'queue');
+      assert.equal(sets.length, 2);
+      const s = mk(1);
+      assert.equal(s.total, sets[1].length);
+      assert.deepEqual([...s.queue].sort((a, b) => a - b), [...sets[1]].sort((a, b) => a - b));
+      // default set is 0 when params.set is missing
+      const d = startSession(MODES.ptest, { questions: Q40, state: emptyState(), settings: {}, now: T0, rnd: mulberry32(1) });
+      assert.deepEqual([...d.queue].sort((a, b) => a - b), [...sets[0]].sort((a, b) => a - b));
+    });
+
+    test('passed only at 100 %: 20/20 -> true, 19/20 -> false, abort -> false', () => {
+      const full = mk(0, 1);
+      const r = play(full, 0);
+      assert.equal(r.answered, 20);
+      assert.equal(full.summary().passed, true);
+      assert.equal(full.summary().correct, 20);
+      const almost = mk(0, 2);
+      const r2 = play(almost, 1);
+      assert.equal(r2.answered, 20);
+      assert.equal(almost.summary().correct, 19);
+      assert.equal(almost.summary().passed, false);
+      const ab = mk(0, 3);
+      let t = T0;
+      for (let i = 0; i < 5; i++) ab.answer(correctOf(ab), { now: (t += 1000) });
+      ab.abort(t + 1);
+      assert.equal(ab.summary().passed, false, '5/5 but not finished');
+    });
+
+    test('sessionEvent(): x.set === params.set (-1 for archive), x.score === correct, n === set size, x.passed', () => {
+      const s = mk(1, 4);
+      const { t } = play(s, 2);
+      const ev = s.sessionEvent(t);
+      assert.equal(ev.m, 'ptest');
+      assert.equal(ev.x.set, 1);
+      assert.equal(ev.x.score, 18);
+      assert.equal(ev.c, 18);
+      assert.equal(ev.n, sets[1].length);
+      assert.equal(ev.x.passed, false);
+      assert.equal(ev.x.timed, undefined);
+      const a = mk('archive', 5);
+      assert.equal(a.total, archive.length);
+      assert.deepEqual([...a.queue].sort((x, y) => x - y), archive);
+      const ra = play(a, 0);
+      const aev = a.sessionEvent(ra.t);
+      assert.equal(aev.x.set, -1);
+      assert.equal(aev.x.score, archive.length);
+      assert.equal(aev.n, archive.length);
+      assert.equal(aev.x.passed, true);
+      // an aborted test keeps n = set size (like exams) and score = what was correct so far
+      const ab = mk(0, 6);
+      ab.answer(correctOf(ab), { now: T0 + 1000 });
+      ab.abort(T0 + 2000);
+      const abev = ab.sessionEvent(T0 + 2000);
+      assert.equal(abev.n, sets[0].length);
+      assert.equal(abev.x.score, 1);
+      assert.equal(abev.x.set, 0);
+    });
+  });
+
+  describe('marathon', () => {
+    test('a wrong answer re-queues the id; the session ends only when pending is zero', () => {
+      assert.equal(PRESETS[MODES.marathon].endRule, 'zeroed');
+      assert.equal(PRESETS[MODES.marathon].loop, true);
+      const s = new Session({ mode: MODES.marathon, questions: Q, queue: [1, 2, 3], now: T0, rnd: mulberry32(3) });
+      assert.equal(s.pending.size, 3);
+      let t = T0;
+      assert.equal(s.current().q.id, 1);
+      s.answer(wrongOf(s), { now: (t += 1000) });
+      assert.deepEqual(s.queue, [1, 2, 3, 1]);
+      assert.equal(s.total, 4);
+      assert.ok(!s.ended);
+      s.answer(correctOf(s), { now: (t += 1000) });   // q2 ok
+      s.answer(wrongOf(s), { now: (t += 1000) });     // q3 wrong -> requeued
+      assert.deepEqual(s.queue, [1, 2, 3, 1, 3]);
+      assert.equal(s.current().q.id, 1);
+      s.answer(correctOf(s), { now: (t += 1000) });   // q1 ok
+      assert.ok(!s.ended, 'q3 still owed');
+      assert.equal(s.pending.size, 1);
+      assert.equal(s.current().q.id, 3);
+      s.answer(wrongOf(s), { now: (t += 1000) });     // q3 wrong again
+      assert.ok(!s.ended);
+      assert.equal(s.current().q.id, 3);
+      s.answer(correctOf(s), { now: (t += 1000) });
+      assert.equal(s.pending.size, 0);
+      assert.ok(s.ended);
+      assert.equal(s.endReason, 'done');
+      const sum = s.summary();
+      assert.equal(sum.completed, true);
+      assert.equal(sum.answered, 6);
+      assert.equal(sum.correct, 3);
+      assert.deepEqual(sum.wrongs, [1, 3, 3]);
+      assert.equal(sum.passed, null);
+      const ev = s.sessionEvent(t);
+      assert.deepEqual(ev.w, [1, 3]);
+      assert.equal(ev.n, 6, 'n = answered count');
+      assert.equal(ev.x.completed, true);
+    });
+
+    test('buildQueue(marathon) is the whole pool once (archive only when included); aborting with pending -> completed false', () => {
+      const G = genQuestions(6, 2);
+      assert.deepEqual([...buildQueue(MODES.marathon, G, emptyState(), {}, T0, {}, mulberry32(1))].sort((a, b) => a - b), [1, 2, 3, 4, 5, 6]);
+      assert.deepEqual([...buildQueue(MODES.marathon, G, emptyState(), { includeArchive: true }, T0, {}, mulberry32(1))].sort((a, b) => a - b), [1, 2, 3, 4, 5, 6, 7, 8]);
+      const s = new Session({ mode: MODES.marathon, questions: Q, queue: [1, 2], now: T0, rnd: mulberry32(3) });
+      s.answer(wrongOf(s), { now: T0 + 1 });
+      s.abort(T0 + 2);
+      assert.equal(s.summary().completed, false);
+      assert.equal(s.pending.size, 2);
+    });
+  });
+
+  describe('goal (continue toward the daily goal)', () => {
+    test('buildQueue(goal, ..., {remaining: 7}) returns 7 distinct ids; default remaining is 20; min 5', () => {
+      const G = genQuestions(30);
+      const q7 = buildQueue(MODES.goal, G, emptyState(), {}, T0, { remaining: 7 }, mulberry32(1));
+      assert.equal(q7.length, 7);
+      assert.equal(new Set(q7).size, 7);
+      assert.equal(buildQueue(MODES.goal, G, emptyState(), {}, T0, {}, mulberry32(1)).length, 20);
+      assert.equal(buildQueue(MODES.goal, G, emptyState(), {}, T0, { remaining: 2 }, mulberry32(1)).length, 5);
+      const s = startSession(MODES.goal, { questions: G, state: emptyState(), settings: {}, now: T0, params: { remaining: 7 }, rnd: mulberry32(2) });
+      assert.equal(s.total, 7);
+      assert.equal(PRESETS[MODES.goal].feedback, 'immediate');
+      assert.equal(PRESETS[MODES.goal].timerMs, null);
+    });
+
+    test('sessionEvent(now, {goalReached: true}) sets x.goalReached true; absent otherwise (any mode)', () => {
+      const G = genQuestions(30);
+      const s = startSession(MODES.goal, { questions: G, state: emptyState(), settings: {}, now: T0, params: { remaining: 7 }, rnd: mulberry32(2) });
+      const { t } = play(s, 1);
+      const reached = s.sessionEvent(t, { goalReached: true });
+      assert.equal(reached.x.goalReached, true);
+      assert.equal(reached.m, 'goal');
+      assert.equal(reached.n, 7);
+      assert.equal(reached.c, 6);
+      const not = s.sessionEvent(t, { goalReached: false });
+      assert.equal('goalReached' in not.x, false);
+      const plain = s.sessionEvent(t);
+      assert.equal('goalReached' in plain.x, false);
+      // the flag is honoured on every mode, e.g. a practice session that crossed the goal
+      const p = new Session({ mode: MODES.practice, questions: Q, queue: [1], now: T0, rnd: mulberry32(1) });
+      p.answer(p.current().q.correct, { now: T0 + 500 });
+      assert.equal(p.sessionEvent(T0 + 500, { goalReached: true }).x.goalReached, true);
+      assert.equal('goalReached' in p.sessionEvent(T0 + 500).x, false);
+      // and the reducer turns it into a streak day
+      const st = reduce([reached], G);
+      assert.equal(st.dueDays.length, 1);
+    });
   });
 });

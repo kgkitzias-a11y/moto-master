@@ -15,6 +15,7 @@ export function renderCertification(ctx) {
     { ok: r.mocksOk, title: `${RULES.READY_MOCKS} συνεχόμενες χρονομετρημένες προσομοιώσεις 10/10 σε ≥${RULES.READY_MOCK_DAYS} μέρες`, detail: `Τώρα: ${r.consecutivePerfect} συνεχόμενες τέλειες, σε ${r.mockDays} διαφορετικές μέρες. Σύνολο προσομοιώσεων: ${timed.length}.` },
     { ok: r.gauntletOk, title: `Όλο το βιβλίο (${r.mastery.total}) με 0 λάθη`, detail: bestGauntlet ? `Καλύτερη προσπάθεια: ${bestGauntlet.wrongs.length} λάθη (${fmtDate(bestGauntlet.t)})` : 'Δεν έχεις ολοκληρώσει ακόμα το τεστ «Όλο το βιβλίο».' },
     { ok: r.suddenOk, title: `Σερί ≥ ${RULES.READY_SUDDEN_DEATH} στο «Μέχρι το πρώτο λάθος»`, detail: `Καλύτερο σερί: ${r.suddenBest}.` },
+    { ok: r.hardOk, title: `${r.hardNeeded} τέλειες «Σκληρές προσομοιώσεις» (10/10 σε 5′)`, detail: `Τώρα: ${r.hardPerfect} τέλειες από ${st.hardMocks.length} προσπάθειες.` },
   ];
   return h('div', null,
     h('h1', null, 'Ετοιμότητα'),
