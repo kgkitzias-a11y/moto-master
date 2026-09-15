@@ -34,7 +34,7 @@ test('app shell and questions load with the network offline', async ({ page, con
     await page.locator('.modes').first().waitFor({ timeout: 20_000 });
     await expect(page.locator('#view')).not.toContainText('Σφάλμα εκκίνησης');
     await expect(page.locator('.mode[data-mode="gauntlet139"] .n')).toHaveText('140 ερωτήσεις');
-    await expect(page.locator('#view')).toContainText('0/140 ερωτήσεις');
+    await expect(page.locator('#view')).toContainText('0/140 ερωτήσεις που είδες');
     await expect(page.locator('#version-stamp')).toHaveText(/^Moto Master v\d/);
     // A session can start offline as well (questions are really loaded, not just counted).
     await page.locator('.mode[data-mode="exam"]').click();
