@@ -36,15 +36,15 @@ test('export/import round trip reproduces identical state and bytes', async ({ p
     expect(await readSeenStat(pageB)).toBe('0/140');
     await gotoHash(pageB, '#/settings');
     await pageB.locator('input[type="file"]').setInputFiles(fileA);
-    await expect(pageB.locator('.toast')).toHaveText('Εισαγωγή: 5 νέα, 0 υπήρχαν');
+    await expect(pageB.locator('.toast')).toHaveText('Επαναφορά: 5 νέες εγγραφές, 0 υπήρχαν ήδη');
     await pageB.reload();
     expect(await readSeenStat(pageB)).toBe(seenA);
-    await expect(pageB.locator('#view table tbody tr', { hasText: 'Εξάσκηση' })).toHaveCount(1);
+    await expect(pageB.locator('#view table tbody tr', { hasText: 'Ελεύθερη εξάσκηση' })).toHaveCount(1);
 
     // Importing the same file again is a no-op (union by id).
     await gotoHash(pageB, '#/settings');
     await pageB.locator('input[type="file"]').setInputFiles(fileA);
-    await expect(pageB.locator('.toast').last()).toHaveText('Εισαγωγή: 0 νέα, 5 υπήρχαν');
+    await expect(pageB.locator('.toast').last()).toHaveText('Επαναφορά: 0 νέες εγγραφές, 5 υπήρχαν ήδη');
 
     const fileB = path.join(testInfo.outputDir, 'export-b.json');
     await exportJson(pageB, fileB);

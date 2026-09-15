@@ -85,8 +85,8 @@ export async function makeOneWrongAnswer(page, { from = 1, to = 60 } = {}) {
 
 export async function startPracticeSequential(page) {
   await gotoHash(page, '#/setup/practice');
-  await page.getByRole('button', { name: 'Σειριακά' }).click();
-  await page.getByRole('button', { name: 'Έναρξη' }).click();
+  await page.getByRole('button', { name: 'Με τη σειρά' }).click();
+  await page.getByRole('button', { name: 'Ξεκίνα' }).click();
   await page.locator('button.opt').first().waitFor();
 }
 
@@ -97,7 +97,7 @@ export async function startPracticeRange(page, from, to) {
   await expect(nums).toHaveCount(2);
   await nums.nth(0).fill(String(from));
   await nums.nth(1).fill(String(to));
-  await page.getByRole('button', { name: 'Έναρξη' }).click();
+  await page.getByRole('button', { name: 'Ξεκίνα' }).click();
   await page.locator('button.opt').first().waitFor();
 }
 
@@ -143,7 +143,7 @@ export async function exportJson(page, savePath) {
   await gotoHash(page, '#/settings');
   const [dl] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('button', { name: 'Εξαγωγή JSON' }).click(),
+    page.getByRole('button', { name: 'Αντίγραφο ασφαλείας' }).click(),
   ]);
   await dl.saveAs(savePath);
   return savePath;

@@ -13,13 +13,13 @@ test('answers persist across reload and appear on the question page', async ({ p
 
   const seen = await readSeenStat(page);
   expect(seen).toMatch(/^3\/\d+$/);
-  await expect(page.locator('#view')).toContainText('Ιστορικό συνεδριών');
-  await expect(page.locator('#view table tbody tr', { hasText: 'Εξάσκηση' })).toHaveCount(1);
+  await expect(page.locator('#view')).toContainText('Ιστορικό τεστ');
+  await expect(page.locator('#view table tbody tr', { hasText: 'Ελεύθερη εξάσκηση' })).toHaveCount(1);
 
   await page.reload();
   await page.locator('#view h1').waitFor();
   expect(await readSeenStat(page)).toBe(seen);
-  await expect(page.locator('#view table tbody tr', { hasText: 'Εξάσκηση' })).toHaveCount(1);
+  await expect(page.locator('#view table tbody tr', { hasText: 'Ελεύθερη εξάσκηση' })).toHaveCount(1);
 
   // Question 1 was the first sequential question: its stats card must show one answer.
   await gotoHash(page, '#/q/1');

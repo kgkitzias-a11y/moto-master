@@ -38,35 +38,35 @@ export function renderSession(ctx) {
     confidence = null; locked = false;
     const { q, order } = cur;
     const meta = modeMeta(s.mode);
-    const comboEl = h('span', { class: `combo ${combo >= 10 ? 'c10' : combo >= 5 ? 'c5' : ''}`, id: 'combo' }, combo >= 2 ? `🔥×${combo}` : '');
+    const comboEl = h('span', { class: `combo ${combo >= 10 ? 'c10' : combo >= 5 ? 'c5' : ''}`, id: 'combo' }, combo >= 2 ? `🔥 ${combo} στη σειρά` : '');
     const top = h('div', { class: 'session-top' },
       h('span', null, `${meta ? meta.title : s.mode} · ${s.position}/${s.mode === MODES.sudden ? '∞' : s.total}`),
       comboEl,
       h('span', { id: 'clock' }, ''),
-      h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onClick: () => { if (confirm('Να τερματιστεί η συνεδρία;')) { s.abort(); finish(); } } }, 'Τέλος'));
+      h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onClick: () => { if (confirm('Να σταματήσει το τεστ;')) { s.abort(); finish(); } } }, 'Τέλος'));
     const bar = h('div', { class: 'timerbar hidden' }, h('div'));
     const prog = s.mode === MODES.sudden ? null : h('div', { class: 'progress' }, h('div', { style: { width: `${((s.position - 1) / Math.max(1, s.total)) * 100}%` } }));
     const img = q.image ? h('img', { class: 'qimg', src: q.image, alt: 'εικόνα ερώτησης' }) : null;
     const card = h('div', { class: 'qcard' },
-      h('div', { class: 'qid' }, h('span', null, `#${q.id} · ${q.category}`), q.tier === 'archive' ? h('span', { class: 'tag' }, 'αρχείο') : null),
+      h('div', { class: 'qid' }, h('span', null, `#${q.id} · ${q.category}`), q.tier === 'archive' ? h('span', { class: 'tag' }, 'εκτός ύλης') : null),
       h('div', { class: 'qtext' }, q.text), img);
 
     const optButtons = [];
     const optionsEl = h('div', { class: 'options' });
     const confEl = s.confidenceOn ? h('div', { class: 'conf' },
-      h('button', { class: 'btn', type: 'button', dataset: { conf: 'sure' }, onClick: (e) => pickConf('sure', e.currentTarget) }, 'Σίγουρος'),
-      h('button', { class: 'btn', type: 'button', dataset: { conf: 'unsure' }, onClick: (e) => pickConf('unsure', e.currentTarget) }, 'Όχι σίγουρος')) : null;
+      h('button', { class: 'btn', type: 'button', dataset: { conf: 'sure' }, onClick: (e) => pickConf('sure', e.currentTarget) }, 'Το ξέρω'),
+      h('button', { class: 'btn', type: 'button', dataset: { conf: 'unsure' }, onClick: (e) => pickConf('unsure', e.currentTarget) }, 'Μαντεύω')) : null;
     function pickConf(v, btn) { confidence = v; for (const b of confEl.children) b.classList.toggle('sel', b === btn); for (const b of optButtons) b.disabled = false; }
 
     if (s.preset.recall) {
-      const reveal = h('button', { class: 'btn btn-primary btn-block', type: 'button', onClick: () => { s.reveal(); reveal.remove(); showRecallAnswer(); } }, 'Αποκάλυψη απάντησης');
-      card.append(h('p', { class: 'muted small' }, 'Σκέψου την απάντηση, μετά αποκάλυψέ την και βαθμολόγησε τίμια.'), reveal);
+      const reveal = h('button', { class: 'btn btn-primary btn-block', type: 'button', onClick: () => { s.reveal(); reveal.remove(); showRecallAnswer(); } }, 'Δείξε την απάντηση');
+      card.append(h('p', { class: 'muted small' }, 'Σκέψου την απάντηση, μετά δες τη σωστή και βαθμολόγησε τίμια.'), reveal);
       function showRecallAnswer() {
         card.append(h('div', { class: 'feedback ok' }, h('div', { class: 'verdict' }, `Σωστή απάντηση: ${LETTERS[q.correct]}. ${q.options[q.correct]}`),
           h('div', { class: 'options', style: { marginTop: '8px' } }, q.options.map((o, i) => h('div', { class: `opt ${i === q.correct ? 'correct' : 'dim'}` }, h('span', { class: 'k' }, LETTERS[i] + '.'), h('span', null, o)))),
           q.explanation ? h('div', { class: 'explain' }, q.explanation) : null,
           h('div', { class: 'btn-row', style: { marginTop: '10px' } },
-            h('button', { class: 'btn', type: 'button', onClick: () => submit(null, false) }, 'Το είχα λάθος'),
+            h('button', { class: 'btn', type: 'button', onClick: () => submit(null, false) }, 'Δεν το ήξερα'),
             h('button', { class: 'btn btn-primary', type: 'button', onClick: () => submit(null, true) }, 'Το ήξερα'))));
       }
     } else {
@@ -105,7 +105,7 @@ export function renderSession(ctx) {
       if (fxOn.haptics) haptic(res.ok ? 12 : [40, 40, 40]);
       if (s.preset.feedback === 'end') { if (s.ended) finish(); else draw(); return; }
       card.classList.add(res.ok ? 'flash-ok' : 'flash-bad');
-      comboEl.textContent = combo >= 2 ? `🔥×${combo}` : ''; comboEl.className = `combo ${combo >= 10 ? 'c10' : combo >= 5 ? 'c5' : ''} bump`;
+      comboEl.textContent = combo >= 2 ? `🔥 ${combo} στη σειρά` : ''; comboEl.className = `combo ${combo >= 10 ? 'c10' : combo >= 5 ? 'c5' : ''} bump`;
       // immediate feedback
       for (const b of optButtons) {
         const oi = Number(b.dataset.orig);
@@ -120,14 +120,14 @@ export function renderSession(ctx) {
       const leveled = st && st.level > levelBefore;
       const mastered = st && isMastered(st) && !masteredBefore.has(q.id);
       if (leveled && fxOn.sound) sfx.levelUp();
-      if (mastered) { masteredBefore.add(q.id); ctx.toast(`★ #${q.id} MASTERED — ${ctx.questions.filter((x) => isMastered(ctx.progress.state.q[x.id])).length}/${ctx.questions.filter((x) => x.tier === 'booklet').length}`, 3000, 'gold'); if (fxOn.sound) sfx.fanfare(); }
+      if (mastered) { masteredBefore.add(q.id); ctx.toast(`★ Η #${q.id} ΕΜΠΕΔΩΘΗΚΕ — ${ctx.questions.filter((x) => isMastered(ctx.progress.state.q[x.id])).length}/${ctx.questions.filter((x) => x.tier === 'booklet').length}`, 3000, 'gold'); if (fxOn.sound) sfx.fanfare(); }
       const fb = h('div', { class: `feedback ${res.ok ? 'ok' : 'bad'}` },
         h('div', { class: 'verdict' }, res.ok ? `Σωστό ✓ ${praise(res.ms, combo)}` : (origIdx === null ? 'Τέλος χρόνου ✗' : 'Λάθος ✗')),
-        h('div', { class: 'small muted' }, `${fmtMs(res.ms)} · επίπεδο ${st ? st.level : 0}/5${st && st.bin ? ' · στο κουτί λαθών' : ''}${!res.ok && levelBefore > (st ? st.level : 0) ? ` · έπεσε από ${levelBefore}` : ''}`),
+        h('div', { class: 'small muted' }, `${fmtMs(res.ms)} · επίπεδο ${st ? st.level : 0}/5${st && st.bin ? ' · στα λάθη σου' : ''}${!res.ok && levelBefore > (st ? st.level : 0) ? ` · έπεσε από ${levelBefore}` : ''}`),
         leveled ? h('div', { class: 'levelup' }, `▲ Επίπεδο ${st.level}/5${st.level === 5 ? ' — κορυφή' : ''}`) : null,
         !res.ok ? h('div', { class: 'small' }, `Σωστή: ${LETTERS[order.indexOf(q.correct)]}. ${q.options[q.correct]}`) : null,
         q.explanation ? h('div', { class: 'explain' }, q.explanation) : null,
-        conf.length && !res.ok ? h('div', { class: 'small warn' }, 'Μπερδεύεται με ' + conf.map((c) => `Q${c.id}`).join(', ')) : null,
+        conf.length && !res.ok ? h('div', { class: 'small warn' }, 'Την μπερδεύεις με ' + conf.map((c) => `${c.id}`).join(', ')) : null,
         h('div', { class: 'session-actions' }, h('button', { class: 'btn btn-primary btn-block', type: 'button', id: 'next-btn', onClick: () => { if (s.ended) finish(); else draw(); } }, s.ended ? 'Αποτελέσματα' : 'Επόμενη')),
       );
       if (s.preset.recall) { card.querySelectorAll('.feedback').forEach((x) => x.remove()); }
@@ -160,8 +160,8 @@ export function renderSummary(ctx) {
   const wrongs = [...new Set(sum.wrongs)];
   let verdict = null;
   if (sum.mode === MODES.exam) verdict = h('div', { class: `verdict-big ${sum.passed ? 'ok' : 'bad'}` }, sum.passed ? 'ΠΕΡΑΣΕΣ' : 'ΚΟΠΗΚΕΣ');
-  else if (sum.mode === MODES.sudden) verdict = h('div', { class: 'verdict-big' }, `Σερί: ${sum.run}`);
-  const again = h('button', { class: 'btn btn-primary', type: 'button', onClick: () => { ctx.session = startSession(sum.mode, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings }); if (ctx.session.isEmpty) { ctx.toast('Τίποτα άλλο για αυτή τη λειτουργία.'); return; } ctx.navigate('#/session'); } }, 'Ξανά');
+  else if (sum.mode === MODES.sudden) verdict = h('div', { class: 'verdict-big' }, `${sum.run} στη σειρά`);
+  const again = h('button', { class: 'btn btn-primary', type: 'button', onClick: () => { ctx.session = startSession(sum.mode, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings }); if (ctx.session.isEmpty) { ctx.toast('Δεν έμεινε τίποτα άλλο για αυτό το τεστ.'); return; } ctx.navigate('#/session'); } }, 'Ξανά');
   const perfect = sum.answered > 0 && sum.wrong === 0 && sum.endReason !== 'abort';
   const isRecord = sum.mode === MODES.sudden && sum.run > 0 && sum.run >= ctx.progress.state.sudden.best;
   const fx = ctx._sessionFx || { combo: () => 0, masteredBefore: new Set() };
@@ -172,10 +172,10 @@ export function renderSummary(ctx) {
   if ((perfect && sum.answered >= 5) || isRecord || (sum.mode === MODES.exam && sum.passed)) { setTimeout(() => { confetti(wrap, 70); if (ctx.progress.settings.sound !== false) sfx.fanfare(); }, 120); }
   const headline = sum.mode === MODES.exam ? null : perfect && sum.answered >= 5 ? h('div', { class: 'verdict-big gold' }, 'ΤΕΛΕΙΟ') : sum.wrong <= 1 && sum.answered >= 8 ? h('div', { class: 'verdict-big ok' }, 'ΣΧΕΔΟΝ ΤΕΛΕΙΟ') : null;
   const deltas = h('div', { class: 'delta' },
-    newlyMastered ? h('span', { class: 'tag up' }, `★ +${newlyMastered} mastered (${masteredNow})`) : null,
-    bestCombo >= 5 ? h('span', { class: 'tag up' }, `🔥 σερί ×${bestCombo}`) : null,
+    newlyMastered ? h('span', { class: 'tag up' }, `★ +${newlyMastered} εμπεδωμένες (σύνολο ${masteredNow})`) : null,
+    bestCombo >= 5 ? h('span', { class: 'tag up' }, `🔥 ${bestCombo} στη σειρά`) : null,
     isRecord ? h('span', { class: 'tag up' }, '🏆 νέο ρεκόρ') : null,
-    sum.wrong ? h('span', { class: 'tag down' }, `${sum.wrong} λάθ${sum.wrong === 1 ? 'ος' : 'η'} → κουτί λαθών`) : null);
+    sum.wrong ? h('span', { class: 'tag down' }, `${sum.wrong} λάθ${sum.wrong === 1 ? 'ος' : 'η'} → στα λάθη σου`) : null);
   append(wrap, [
     h('h1', null, meta ? meta.title : sum.mode),
     verdict, headline,
@@ -185,9 +185,9 @@ export function renderSummary(ctx) {
         h('div', { class: 'stat' }, h('div', { class: 'v' }, sum.wrong), h('div', { class: 'l' }, 'λάθη')),
         h('div', { class: 'stat' }, h('div', { class: 'v' }, fmtClock(sum.durationMs)), h('div', { class: 'l' }, 'χρόνος'))),
       sum.endReason === 'time' ? h('p', { class: 'bad' }, 'Έληξε ο χρόνος.') : null,
-      sum.endReason === 'abort' ? h('p', { class: 'muted' }, 'Η συνεδρία τερματίστηκε πρόωρα.') : null,
-      sum.completed && sum.mode === MODES.due ? h('p', { class: 'ok' }, 'Το σημερινό drill ολοκληρώθηκε ✓') : null,
-      sum.completed && (sum.mode === MODES.tomorrow || sum.mode === MODES.wrong) ? h('p', { class: 'ok' }, 'Μηδενίστηκε ✓') : null,
+      sum.endReason === 'abort' ? h('p', { class: 'muted' }, 'Σταμάτησες το τεστ πριν τελειώσει.') : null,
+      sum.completed && sum.mode === MODES.due ? h('p', { class: 'ok' }, 'Η σημερινή εξάσκηση ολοκληρώθηκε ✓') : null,
+      sum.completed && (sum.mode === MODES.tomorrow || sum.mode === MODES.wrong) ? h('p', { class: 'ok' }, 'Τα καθάρισες όλα ✓') : null,
       deltas),
     wrongs.length ? h('div', { class: 'card' }, h('h3', null, 'Λάθη'), h('div', { class: 'list' }, wrongs.map((id) => { const q = byId.get(id); return h('a', { class: 'qrow', href: `#/q/${id}` }, h('span', { class: 'id' }, `#${id}`), h('span', { class: 'txt' }, q ? q.text : '')); }))) : null,
     h('div', { class: 'btn-row' }, h('a', { class: 'btn', href: '#/' }, 'Αρχική'), again),

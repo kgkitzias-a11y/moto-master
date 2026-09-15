@@ -6,20 +6,20 @@ import * as sel from './selection.js';
 import { dueList } from './reducer.js';
 
 export const PRESETS = {
-  [MODES.practice]:    { label: 'Εξάσκηση', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.adaptive]:    { label: 'Προσαρμοστική αδυναμία', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.wrong]:       { label: 'Ανακύκλωση λαθών', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
+  [MODES.practice]:    { label: 'Ελεύθερη εξάσκηση', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.adaptive]:    { label: 'Έξυπνο τεστ', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.wrong]:       { label: 'Επανάληψη λαθών', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
   [MODES.due]:         { label: 'Σήμερα', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.exam]:        { label: 'Πραγματικές εξετάσεις', timerMs: RULES.EXAM_TIME_MS, perQuestionMs: null, shuffle: true, feedback: 'end', endRule: 'queue', loop: false, maxWrong: RULES.EXAM_MAX_WRONG },
-  [MODES.hard]:        { label: 'Hard Mode', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false, hard: true },
-  [MODES.trap]:        { label: 'Παγίδες', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.speed]:       { label: 'Speed Round', timerMs: null, perQuestionMs: RULES.SPEED_ROUND_MS, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.sudden]:      { label: 'Sudden Death', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'firstWrong', loop: true },
-  [MODES.gauntlet139]: { label: 'Gauntlet βιβλίου', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.gauntlet172]: { label: 'Gauntlet 172', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.exam]:        { label: 'Προσομοίωση εξετάσεων', timerMs: RULES.EXAM_TIME_MS, perQuestionMs: null, shuffle: true, feedback: 'end', endRule: 'queue', loop: false, maxWrong: RULES.EXAM_MAX_WRONG },
+  [MODES.hard]:        { label: 'Δύσκολο τεστ', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false, hard: true },
+  [MODES.trap]:        { label: 'Ερωτήσεις-παγίδες', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.speed]:       { label: 'Κόντρα στον χρόνο', timerMs: null, perQuestionMs: RULES.SPEED_ROUND_MS, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.sudden]:      { label: 'Μέχρι το πρώτο λάθος', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'firstWrong', loop: true },
+  [MODES.gauntlet139]: { label: 'Όλο το βιβλίο', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.gauntlet172]: { label: 'Όλο το βιβλίο + εκτός ύλης', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
   [MODES.tomorrow]:    { label: 'Αύριο εξετάσεις', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
-  [MODES.signs]:       { label: 'Μόνο πινακίδες', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.recall]:      { label: 'Ανάκληση', timerMs: null, perQuestionMs: null, shuffle: false, feedback: 'immediate', endRule: 'queue', loop: false, recall: true },
+  [MODES.signs]:       { label: 'Μόνο σήματα', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.recall]:      { label: 'Από μνήμης', timerMs: null, perQuestionMs: null, shuffle: false, feedback: 'immediate', endRule: 'queue', loop: false, recall: true },
 };
 
 // Builds the initial queue for a mode. `params` carries mode-specific choices.

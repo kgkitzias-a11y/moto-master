@@ -51,8 +51,8 @@ test('two devices converge on the same merged state via one gist', async ({ brow
     // Derived state converged.
     expect(await readSeenStat(A)).toBe('8/140');
     expect(await readSeenStat(B)).toBe('8/140');
-    await expect(A.locator('#view table tbody tr', { hasText: 'Εξάσκηση' })).toHaveCount(2);
-    await expect(B.locator('#view table tbody tr', { hasText: 'Εξάσκηση' })).toHaveCount(2);
+    await expect(A.locator('#view table tbody tr', { hasText: 'Ελεύθερη εξάσκηση' })).toHaveCount(2);
+    await expect(B.locator('#view table tbody tr', { hasText: 'Ελεύθερη εξάσκηση' })).toHaveCount(2);
 
     // Exports are byte-equal (both sorted by (t, id)).
     const fileA = path.join(testInfo.outputDir, 'export-a.json');

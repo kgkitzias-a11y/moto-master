@@ -16,19 +16,19 @@ async function expectSummary(page, id) {
 const drivers = {
   async practice(page) {
     await startPracticeSequential(page);
-    await expect(page.locator('.session-top')).toContainText('Εξάσκηση · 1/');
+    await expect(page.locator('.session-top')).toContainText('Ελεύθερη εξάσκηση · 1/');
     await expect(page.locator('.qid')).toContainText('#1 ');
     const r = await drive(page, { max: 3, finishEarly: true });
     expect(r).toEqual({ answered: 3, ended: 'abort' });
     const s = await expectSummary(page, 'practice');
     expect(s.answered).toBe(3);
-    await expect(page.locator('#view')).toContainText('Η συνεδρία τερματίστηκε πρόωρα.');
+    await expect(page.locator('#view')).toContainText('Σταμάτησες το τεστ πριν τελειώσει.');
   },
 
   async adaptive(page) {
     await gotoHash(page, '#/setup/adaptive');
     await page.locator('input[type="number"]').fill('5');
-    await page.getByRole('button', { name: 'Έναρξη' }).click();
+    await page.getByRole('button', { name: 'Ξεκίνα' }).click();
     await expect(page.locator('.session-top')).toContainText('1/5');
     const r = await drive(page, { max: 5, finishEarly: false });
     expect(r).toEqual({ answered: 5, ended: 'done' });
@@ -113,7 +113,7 @@ const drivers = {
     const s = await expectSummary(page, 'sudden');
     expect(s.answered).toBe(answered);
     expect(s.correct).toBe(correct);
-    await expect(page.locator('.verdict-big')).toHaveText(`Σερί: ${correct}`);
+    await expect(page.locator('.verdict-big')).toHaveText(`${correct} στη σειρά`);
   },
 
   async gauntlet139(page) {
@@ -130,7 +130,7 @@ const drivers = {
     const meta = (await (await page.request.get('/data/questions.json')).json()).meta;
     if (meta.archive > 0) {
       await gotoHash(page, '#/settings');
-      const toggle = page.locator('label.toggle', { hasText: 'Ερωτήσεις αρχείου' }).locator('input[type="checkbox"]');
+      const toggle = page.locator('label.toggle', { hasText: 'Ερωτήσεις εκτός ύλης' }).locator('input[type="checkbox"]');
       await toggle.check();
       await expect(toggle).toBeChecked();
     }
@@ -158,7 +158,7 @@ const drivers = {
   async wrong(page) {
     // Precondition: the bin is empty on a fresh profile, so the card is disabled and toasts.
     await clickMode(page, 'wrong');
-    await expect(page.locator('.toast')).toHaveText('Το κουτί λαθών είναι άδειο.');
+    await expect(page.locator('.toast')).toHaveText('Δεν έχεις λάθη αυτή τη στιγμή.');
     await expect(page).not.toHaveURL(/#\/session$/);
     await makeOneWrongAnswer(page);
     await gotoHome(page);
@@ -177,7 +177,7 @@ const drivers = {
     if (!done) { await endSession(page); }
     const s = await expectSummary(page, 'wrong');
     expect(s.answered).toBe(answered);
-    if (done) await expect(page.locator('#view')).toContainText('Μηδενίστηκε ✓');
+    if (done) await expect(page.locator('#view')).toContainText('Τα καθάρισες όλα ✓');
   },
 
   async signs(page) {
@@ -202,15 +202,15 @@ const drivers = {
   async recall(page) {
     await gotoHash(page, '#/setup/recall');
     await page.locator('input[type="number"]').fill('1'); // random policy → count input
-    await page.getByRole('button', { name: 'Έναρξη' }).click();
+    await page.getByRole('button', { name: 'Ξεκίνα' }).click();
     await expect(page).toHaveURL(/#\/session$/);
-    await expect(page.locator('.session-top')).toContainText('Ανάκληση · 1/1');
+    await expect(page.locator('.session-top')).toContainText('Από μνήμης · 1/1');
     await expect(page.locator('button.opt')).toHaveCount(0); // options hidden until reveal
     await expect(page.locator('[data-conf]')).toHaveCount(0); // no confidence prompt in recall
-    await page.getByRole('button', { name: 'Αποκάλυψη απάντησης' }).click();
+    await page.getByRole('button', { name: 'Δείξε την απάντηση' }).click();
     await expect(page.locator('.feedback .verdict')).toContainText('Σωστή απάντηση:');
     await expect(page.locator('.feedback .opt.correct')).toHaveCount(1);
-    await page.getByRole('button', { name: 'Το ήξερα' }).click();
+    await page.getByRole('button', { name: 'Το ήξερα', exact: true }).click();
     await expect(page.locator('.feedback .verdict')).toContainText('Σωστό ✓');
     expect(await clickNext(page)).toBe(true);
     const s = await expectSummary(page, 'recall');

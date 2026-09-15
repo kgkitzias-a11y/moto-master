@@ -109,11 +109,11 @@ async function main() {
   ctx.progress.addEventListener('settings', () => applyTheme(ctx.progress.settings.theme));
   if (pairing) {
     const existing = ctx.progress.token;
-    const ok = !existing || existing === pairing.token || confirm('Υπάρχει ήδη token σε αυτή τη συσκευή. Να αντικατασταθεί από τον σύνδεσμο σύζευξης;');
+    const ok = !existing || existing === pairing.token || confirm('Υπάρχει ήδη token σε αυτή τη συσκευή. Να αντικατασταθεί από αυτό του νέου συνδέσμου;');
     if (ok) {
       ctx.progress.setToken(pairing.token);
       if (pairing.gistId) ctx.progress.updateSettings({ gistId: pairing.gistId });
-      toast('Η σύζευξη ολοκληρώθηκε — συγχρονισμός…');
+      toast('Η συσκευή συνδέθηκε — συγχρονισμός…');
     }
   }
   ctx.progress.addEventListener('sync', renderSyncPill);

@@ -20,7 +20,7 @@ test('pairing string from A configures B and strips the hash', async ({ browser 
     expect(gistId).toBeTruthy();
 
     await gotoHash(A, '#/settings');
-    await A.getByRole('button', { name: 'Εμφάνιση QR σύζευξης' }).click();
+    await A.getByRole('button', { name: 'Εμφάνιση QR σύνδεσης' }).click();
     await expect(A.locator('.qr svg')).toBeVisible();
     const ta = A.locator('textarea');
     await expect(ta).toBeVisible();
@@ -39,7 +39,7 @@ test('pairing string from A configures B and strips the hash', async ({ browser 
     expect(await B.evaluate(() => location.hash)).toBe('');
     expect(await B.evaluate(() => localStorage.getItem('mm.gh.token'))).toBe(TOKEN);
     expect(JSON.parse(await B.evaluate(() => localStorage.getItem('mm.settings'))).gistId).toBe(gistId);
-    await expect(B.locator('.toast')).toHaveText('Η σύζευξη ολοκληρώθηκε — συγχρονισμός…');
+    await expect(B.locator('.toast')).toHaveText('Η συσκευή συνδέθηκε — συγχρονισμός…');
     await expect(B.locator('#sync-pill')).not.toHaveText('Μόνο τοπικά');
     await expect(B.locator('#sync-pill')).toHaveText(/^Συγχρονίστηκε/);
     await expect(B.locator('#sync-pill')).toHaveClass(/pill-synced/);

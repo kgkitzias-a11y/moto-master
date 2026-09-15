@@ -28,7 +28,7 @@ export function renderSettings(ctx) {
   const refreshSyncInfo = () => {
     const st = p.sync;
     syncInfo.textContent = hasToken || p.token
-      ? `Gist: ${s.gistId ? s.gistId : '— (θα δημιουργηθεί)'} · Τελευταίος συγχρονισμός: ${fmtDate(st.lastAt)}${st.error ? ' · Σφάλμα: ' + st.error : ''} · ${p.events.length} γεγονότα τοπικά`
+      ? `Gist: ${s.gistId ? s.gistId : '— (θα δημιουργηθεί)'} · Τελευταίος συγχρονισμός: ${fmtDate(st.lastAt)}${st.error ? ' · Σφάλμα: ' + st.error : ''} · ${p.events.length} εγγραφές τοπικά`
       : 'Χωρίς token η πρόοδος μένει μόνο σε αυτή τη συσκευή.';
   };
   refreshSyncInfo();
@@ -36,20 +36,20 @@ export function renderSettings(ctx) {
 
   const saveTokenBtn = h('button', { class: 'btn btn-primary', type: 'button', onClick: async () => {
     const t = tokenInput.value.trim();
-    if (!t) { ctx.toast('Επικόλλησε το token πρώτα.'); return; }
+    if (!t) { ctx.toast('Επικόλλησε πρώτα το token.'); return; }
     p.setToken(t); tokenInput.value = '';
     ctx.toast('Το token αποθηκεύτηκε — συγχρονισμός…');
     const r = await p.syncNow('token');
-    ctx.toast(r ? `Συγχρονίστηκε (${r.total} γεγονότα)` : `Σφάλμα: ${p.sync.error || ''}`);
+    ctx.toast(r ? `Συγχρονίστηκε (${r.total} εγγραφές)` : `Σφάλμα: ${p.sync.error || ''}`);
     ctx.navigate('#/settings'); route();
   } }, 'Αποθήκευση & συγχρονισμός');
   const syncNowBtn = h('button', { class: 'btn', type: 'button', disabled: !hasToken, onClick: async () => { const r = await p.syncNow('manual'); ctx.toast(r ? `Συγχρονίστηκε: ${r.pulled} ↓ ${r.pushed} ↑` : `Σφάλμα: ${p.sync.error || ''}`); } }, 'Συγχρονισμός τώρα');
-  const forgetBtn = h('button', { class: 'btn btn-ghost', type: 'button', disabled: !hasToken, onClick: () => { if (confirm('Να αφαιρεθεί το token από αυτή τη συσκευή; Η πρόοδος παραμένει τοπικά.')) { p.setToken(''); route(); } } }, 'Αφαίρεση token');
+  const forgetBtn = h('button', { class: 'btn btn-ghost', type: 'button', disabled: !hasToken, onClick: () => { if (confirm('Να αφαιρεθεί το token από αυτή τη συσκευή; Η πρόοδος μένει στη συσκευή.')) { p.setToken(''); route(); } } }, 'Αφαίρεση token');
 
   // ---- pairing ----
   const pairBox = h('div');
   const showPairing = async () => {
-    if (!p.token) { ctx.toast('Πρώτα αποθήκευσε token σε αυτή τη συσκευή.'); return; }
+    if (!p.token) { ctx.toast('Αποθήκευσε πρώτα ένα token σε αυτή τη συσκευή.'); return; }
     try { await loadScript('./src/vendor/qrcode.js'); } catch (e) { ctx.toast('Η βιβλιοθήκη QR δεν φορτώθηκε.'); return; }
     const str = encodePairing({ token: p.token, gistId: s.gistId });
     const payload = `mm1:${str}`; // deliberately NOT a URL: camera apps must not open it in Safari or keep it in URL history
@@ -62,21 +62,21 @@ export function renderSettings(ctx) {
     } catch (e) { pairBox.append(h('p', { class: 'bad' }, 'Το QR δεν δημιουργήθηκε: ' + e.message)); }
     const ta = h('textarea', { readonly: true, value: str, onClick: (e) => e.target.select() });
     pairBox.append(
-      h('p', { class: 'small muted' }, 'Στο iPhone: άνοιξε την ΕΓΚΑΤΕΣΤΗΜΕΝΗ εφαρμογή → Ρυθμίσεις → «Σάρωση QR», ή επικόλλησε το κείμενο στο πεδίο «Κωδικός σύζευξης». Το QR περιέχει το token σου — μην το μοιραστείς.'),
+      h('p', { class: 'small muted' }, 'Στο iPhone: άνοιξε την ΕΓΚΑΤΕΣΤΗΜΕΝΗ εφαρμογή → Ρυθμίσεις → «Σάρωση QR», ή επικόλλησε το κείμενο στο πεδίο «Κωδικός σύνδεσης». Το QR περιέχει το token σου — μην το μοιραστείς.'),
       ta,
       h('div', { class: 'btn-row' },
-        h('button', { class: 'btn', type: 'button', onClick: async () => { try { await navigator.clipboard.writeText(str); ctx.toast('Αντιγράφηκε'); } catch { ta.select(); ctx.toast('Επίλεξε και αντίγραψε χειροκίνητα'); } } }, 'Αντιγραφή κωδικού'),
+        h('button', { class: 'btn', type: 'button', onClick: async () => { try { await navigator.clipboard.writeText(str); ctx.toast('Αντιγράφηκε'); } catch { ta.select(); ctx.toast('Επίλεξε το κείμενο και αντίγραψέ το'); } } }, 'Αντιγραφή κωδικού'),
         h('button', { class: 'btn btn-ghost', type: 'button', onClick: () => pairBox.replaceChildren() }, 'Κλείσιμο')),
     );
   };
 
-  const pairInput = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: false, placeholder: 'Επικόλλησε τον κωδικό σύζευξης…' });
+  const pairInput = h('input', { type: 'text', autocomplete: 'off', autocapitalize: 'off', spellcheck: false, placeholder: 'Επικόλλησε τον κωδικό σύνδεσης…' });
   const applyPairing = (str) => {
     try {
       const pr = decodePairing(str.trim().replace(/^.*#pair=/, '').replace(/^mm1:/, ''));
       p.setToken(pr.token); if (pr.gistId) p.updateSettings({ gistId: pr.gistId });
-      ctx.toast('Σύζευξη OK — συγχρονισμός…'); p.syncNow('pair').then(() => route());
-    } catch { ctx.toast('Μη έγκυρος κωδικός σύζευξης.'); }
+      ctx.toast('Η συσκευή συνδέθηκε — συγχρονισμός…'); p.syncNow('pair').then(() => route());
+    } catch { ctx.toast('Ο κωδικός σύνδεσης δεν είναι σωστός.'); }
   };
 
   const scanBox = h('div');
@@ -113,19 +113,19 @@ export function renderSettings(ctx) {
       try { await navigator.share({ files: [file], title: 'Moto Master progress' }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
     }
     const a = h('a', { href: URL.createObjectURL(file), download: name }); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-  } }, 'Εξαγωγή JSON');
+  } }, 'Αντίγραφο ασφαλείας');
   const fileInput = h('input', { type: 'file', accept: 'application/json,.json', class: 'hidden', onChange: async (e) => {
     const f = e.target.files[0]; if (!f) return;
-    try { const r = await p.importJson(await f.text()); ctx.toast(`Εισαγωγή: ${r.imported} νέα, ${r.skipped} υπήρχαν`); route(); }
+    try { const r = await p.importJson(await f.text()); ctx.toast(`Επαναφορά: ${r.imported} νέες εγγραφές, ${r.skipped} υπήρχαν ήδη`); route(); }
     catch (err) { ctx.toast('Μη έγκυρο αρχείο: ' + err.message); }
     e.target.value = '';
   } });
-  const importBtn = h('button', { class: 'btn', type: 'button', onClick: () => fileInput.click() }, 'Εισαγωγή JSON (συγχώνευση)');
+  const importBtn = h('button', { class: 'btn', type: 'button', onClick: () => fileInput.click() }, 'Επαναφορά (συγχώνευση)');
   const resetBtn = h('button', { class: 'btn btn-danger', type: 'button', onClick: async () => {
-    if (!confirm('ΜΗΔΕΝΙΣΜΟΣ προόδου; Θα διαγραφούν επίπεδα, στατιστικά και ιστορικό (σε όλες τις συγχρονισμένες συσκευές).')) return;
+    if (!confirm('Να διαγραφεί όλη η πρόοδος; Θα χαθούν επίπεδα, στατιστικά και ιστορικό (σε όλες τις συγχρονισμένες συσκευές).')) return;
     if (!confirm('Σίγουρα; Δεν αναιρείται.')) return;
-    await p.reset(); ctx.toast('Η πρόοδος μηδενίστηκε.'); route();
-  } }, 'Μηδενισμός προόδου');
+    await p.reset(); ctx.toast('Η πρόοδος διαγράφηκε.'); route();
+  } }, 'Διαγραφή προόδου');
 
   const cacheBtn = h('button', { class: 'btn btn-ghost', type: 'button', onClick: async () => {
     if ('caches' in window) { for (const k of await caches.keys()) await caches.delete(k); }
@@ -145,35 +145,35 @@ export function renderSettings(ctx) {
       h('div', { style: { marginTop: '6px' } }, forgetBtn),
       syncInfo),
     h('div', { class: 'card' },
-      h('h3', null, 'Σύνδεση κινητού'),
-      h('div', { class: 'btn-row' }, h('button', { class: 'btn', type: 'button', onClick: showPairing }, 'Εμφάνιση QR σύζευξης'), h('button', { class: 'btn', type: 'button', onClick: startScan }, 'Σάρωση QR')),
+      h('h3', null, 'Σύνδεση συσκευής'),
+      h('div', { class: 'btn-row' }, h('button', { class: 'btn', type: 'button', onClick: showPairing }, 'Εμφάνιση QR σύνδεσης'), h('button', { class: 'btn', type: 'button', onClick: startScan }, 'Σάρωση QR')),
       pairBox, scanBox,
-      h('label', null, 'Κωδικός σύζευξης (χειροκίνητα)'), pairInput,
-      h('button', { class: 'btn btn-block', type: 'button', style: { marginTop: '8px' }, onClick: () => applyPairing(pairInput.value) }, 'Εφαρμογή κωδικού')),
+      h('label', null, 'Κωδικός σύνδεσης (χωρίς QR)'), pairInput,
+      h('button', { class: 'btn btn-block', type: 'button', style: { marginTop: '8px' }, onClick: () => applyPairing(pairInput.value) }, 'Σύνδεση με κωδικό')),
     h('div', { class: 'card' },
       h('h3', null, 'Στόχος & κίνητρο'),
       h('label', null, 'Ημερομηνία εξετάσεων (αντίστροφη μέτρηση στην αρχική)'),
       h('input', { type: 'date', value: s.examDate || '', onChange: (e) => p.updateSettings({ examDate: e.target.value || null }) }),
       h('label', null, 'Ημερήσιος στόχος απαντήσεων'),
       h('input', { type: 'number', inputmode: 'numeric', min: 10, max: 400, step: 10, value: s.dailyGoal || 40, onChange: (e) => p.updateSettings({ dailyGoal: Math.max(10, Math.min(400, Number(e.target.value) || 40)) }) }),
-      h('p', { class: 'small muted' }, 'Ο στόχος και το σερί μετράνε το σημερινό drill («Σήμερα»)· χάνεις το σερί αν δεν το ολοκληρώσεις μέχρι τα μεσάνυχτα.'),
+      h('p', { class: 'small muted' }, 'Ο στόχος και το σερί μετράνε τη σημερινή εξάσκηση («Σήμερα»)· χάνεις το σερί αν δεν την ολοκληρώσεις μέχρι τα μεσάνυχτα.'),
       h('label', null, 'Εμφάνιση'),
       h('select', { onChange: (e) => p.updateSettings({ theme: e.target.value }) },
         [['dark', 'Σκούρο (προτείνεται για συγκέντρωση)'], ['light', 'Ανοιχτό'], ['auto', 'Αυτόματο (συστήματος)']].map(([v, l]) => h('option', { value: v, selected: (s.theme || 'dark') === v }, l))),
-      toggleRow('Ήχοι', 'Σύντομοι ήχοι σωστού/λάθους/επιπέδου (αθόρυβη λειτουργία iPhone = χωρίς ήχο).', s.sound !== false, (v) => p.updateSettings({ sound: v })),
-      toggleRow('Δόνηση', 'Απτική ανάδραση όπου υποστηρίζεται (Android).', s.haptics !== false, (v) => p.updateSettings({ haptics: v }))),
+      toggleRow('Ήχοι', 'Σύντομοι ήχοι για σωστό, λάθος και ανέβασμα επιπέδου (με το iPhone στο αθόρυβο δεν ακούγονται).', s.sound !== false, (v) => p.updateSettings({ sound: v })),
+      toggleRow('Δόνηση', 'Δόνηση όπου υποστηρίζεται (Android).', s.haptics !== false, (v) => p.updateSettings({ haptics: v }))),
     h('div', { class: 'card' },
       h('h3', null, 'Προπόνηση'),
-      toggleRow('Hard Mode (γενικά)', 'Κάθε λάθος → επίπεδο 0, σε όλες τις λειτουργίες.', s.hardMode, (v) => p.updateSettings({ hardMode: v })),
-      toggleRow('Ερώτηση σιγουριάς', 'Πριν απαντήσεις: Σίγουρος / Όχι σίγουρος. Λάθος ενώ «Σίγουρος» → επίπεδο 0.', s.confidence, (v) => p.updateSettings({ confidence: v })),
-      toggleRow('Ερωτήσεις αρχείου', 'Συμπεριλαμβάνει τις ανακτημένες ερωτήσεις (ID που λείπουν από το βιβλίο). Η ετοιμότητα τις αγνοεί.', s.includeArchive, (v) => { p.updateSettings({ includeArchive: v }); route(); })),
+      toggleRow('Δύσκολο τεστ (παντού)', 'Κάθε λάθος → επίπεδο 0, σε όλα τα τεστ.', s.hardMode, (v) => p.updateSettings({ hardMode: v })),
+      toggleRow('Ερώτηση «Το ξέρω / Μαντεύω»', 'Πριν απαντήσεις διαλέγεις «Το ξέρω» ή «Μαντεύω». Λάθος ενώ «Το ξέρω» → επίπεδο 0.', s.confidence, (v) => p.updateSettings({ confidence: v })),
+      toggleRow('Ερωτήσεις εκτός ύλης', 'Προσθέτει τις ερωτήσεις που ανακτήθηκαν από άλλες πηγές (ID που λείπουν από το βιβλίο). Δεν μετράνε στην ετοιμότητα.', s.includeArchive, (v) => { p.updateSettings({ includeArchive: v }); route(); })),
     h('div', { class: 'card' },
       h('h3', null, 'Αντίγραφα ασφαλείας'),
       h('div', { class: 'btn-row' }, exportBtn, importBtn), fileInput,
       h('div', { style: { marginTop: '10px' } }, resetBtn)),
     h('div', { class: 'card' },
       h('h3', null, 'Εφαρμογή'),
-      h('p', { class: 'small muted' }, `Έκδοση ${ctx.version} · ${ctx.questions.length} ερωτήσεις (${ctx.questions.filter((q) => q.tier === 'booklet').length} βιβλίο + ${ctx.questions.filter((q) => q.tier === 'archive').length} αρχείο) · συσκευή ${s.deviceId}`),
+      h('p', { class: 'small muted' }, `Έκδοση ${ctx.version} · ${ctx.questions.length} ερωτήσεις (${ctx.questions.filter((q) => q.tier === 'booklet').length} βιβλίο + ${ctx.questions.filter((q) => q.tier === 'archive').length} εκτός ύλης) · συσκευή ${s.deviceId}`),
       h('p', { class: 'small muted' }, ctx.meta && ctx.meta.exam ? `Μορφή εξέτασης: ${ctx.meta.exam}` : ''),
       cacheBtn),
   );

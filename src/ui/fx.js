@@ -43,10 +43,10 @@ export function applyTheme(theme) {
 }
 
 // Warm, specific praise beats generic "good job" (variable, non-repetitive reinforcement).
-const PRAISE = ['Καθαρά.', 'Ακριβώς.', 'Αυτό είναι.', 'Σταθερός.', 'Έτσι μπράβο.', 'Χωρίς δισταγμό.', 'Διάνα.', 'Το ’χεις.'];
-const PRAISE_FAST = ['Αστραπή ⚡', 'Αντανακλαστικό.', 'Πριν καν το σκεφτείς.'];
+const PRAISE = ['Σωστά!', 'Ακριβώς!', 'Έτσι!', 'Μπράβο!', 'Συνέχισε έτσι!', 'Τέλεια!', 'Διάνα!', 'Το ’χεις!'];
+const PRAISE_FAST = ['Αστραπή ⚡', 'Αντανακλαστικό!', 'Πριν καν το σκεφτείς!'];
 export function praise(ms, combo) {
-  if (combo >= 10) return `×${combo} — σε φόρμα εξετάσεων.`;
+  if (combo >= 10) return `${combo} στη σειρά — σε φόρμα εξετάσεων!`;
   if (ms < 2500) return PRAISE_FAST[Math.floor(Math.random() * PRAISE_FAST.length)];
   return PRAISE[Math.floor(Math.random() * PRAISE.length)];
 }

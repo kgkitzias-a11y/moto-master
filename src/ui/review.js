@@ -4,7 +4,7 @@ import { median } from '../engine/time.js';
 import { levelDots } from './stats.js';
 import { RULES } from '../engine/constants.js';
 
-const filters = [['all', 'Όλες'], ['unseen', 'Αδιάβαστες'], ['weak', 'Αδύναμες'], ['bin', 'Κουτί λαθών'], ['mastered', 'Mastered'], ['archive', 'Αρχείο']];
+const filters = [['all', 'Όλες'], ['unseen', 'Νέες'], ['weak', 'Αδύναμες'], ['bin', 'Τα λάθη σου'], ['mastered', 'Εμπεδωμένες'], ['archive', 'Εκτός ύλης']];
 let uiState = { filter: 'all', query: '', category: '' };
 
 export function renderReview(ctx) {
@@ -57,11 +57,11 @@ export function renderQuestion(ctx, id) {
   return h('div', null,
     h('div', { class: 'row between' }, h('a', { class: 'btn btn-sm', href: prev ? `#/q/${prev.id}` : '#/review' }, prev ? `← #${prev.id}` : '← Λίστα'), h('a', { class: 'btn btn-sm', href: '#/review' }, 'Λίστα'), h('a', { class: 'btn btn-sm', href: next ? `#/q/${next.id}` : '#/review' }, next ? `#${next.id} →` : 'Λίστα →')),
     h('div', { class: 'qcard', style: { marginTop: '10px' } },
-      h('div', { class: 'qid' }, h('span', null, `#${q.id} · ${q.category}`), h('span', null, h('span', { class: 'tag' }, q.tier === 'booklet' ? 'βιβλίο' : 'αρχείο'), q.image ? h('span', { class: 'tag' }, 'εικόνα') : null)),
+      h('div', { class: 'qid' }, h('span', null, `#${q.id} · ${q.category}`), h('span', null, h('span', { class: 'tag' }, q.tier === 'booklet' ? 'βιβλίο' : 'εκτός ύλης'), q.image ? h('span', { class: 'tag' }, 'εικόνα') : null)),
       h('div', { class: 'qtext' }, q.text),
       q.image ? h('img', { class: 'qimg', src: q.image, alt: 'εικόνα ερώτησης' }) : null,
       h('div', { class: 'options' }, q.options.map((o, i) => h('div', { class: `opt ${i === q.correct ? 'correct' : 'dim'}` }, h('span', { class: 'k' }, LETTERS[i] + '.'), h('span', null, o)))),
-      q.explanation ? h('div', { class: 'explain' }, h('b', null, 'Γιατί: '), q.explanation, h('span', { class: 'small' }, ' (αυτόματη εξήγηση)')) : null,
+      q.explanation ? h('div', { class: 'explain' }, h('b', null, 'Γιατί: '), q.explanation, h('span', { class: 'small' }, ' (αυτόματη επεξήγηση)')) : null,
     ),
     h('div', { class: 'card' },
       h('h3', null, 'Στατιστικά'),
@@ -70,13 +70,13 @@ export function renderQuestion(ctx, id) {
           h('div', { class: 'stat' }, h('div', { class: 'v' }, `${s.correct}/${s.seen}`), h('div', { class: 'l' }, 'σωστές / σύνολο')),
           h('div', { class: 'stat' }, h('div', { class: 'v' }, `${s.level}/5`), h('div', { class: 'l' }, 'επίπεδο')),
           h('div', { class: 'stat' }, h('div', { class: 'v' }, fmtMs(median(s.ms))), h('div', { class: 'l' }, 'διάμεσος χρόνος'))),
-        h('p', { class: 'small' }, h('span', { class: 'tag' }, isSolid(s) ? '«σταθερή» ✓' : 'όχι «σταθερή»'), h('span', { class: 'tag' }, isMastered(s) ? 'mastered ✓' : 'όχι mastered'),
-          inBin(s) ? h('span', { class: 'tag warn' }, `στο κουτί λαθών (${s.bin.days.length}/${RULES.BIN_EXIT_DAYS} μέρες)`) : null,
-          s.level >= RULES.MAX_LEVEL ? h('span', { class: 'tag' }, 'επίπεδο 5 — μέγιστο') : dueForPromotion(s, now) ? h('span', { class: 'tag' }, 'ώριμη για προαγωγή') : h('span', { class: 'tag' }, 'προαγωγή σε ' + Math.max(1, Math.ceil((s.lastPromoT + RULES.PROMOTION_GAP_MS - now) / 3600000)) + ' ώρες')),
-        h('p', { class: 'small muted' }, `Τελευταία: ${fmtDate(s.lastT)} · ${s.promoCount} προαγωγές σε ${s.promoDays.length} μέρες`),
+        h('p', { class: 'small' }, h('span', { class: 'tag' }, isSolid(s) ? 'σίγουρη ✓' : 'όχι σίγουρη'), h('span', { class: 'tag' }, isMastered(s) ? 'εμπεδωμένη ✓' : 'όχι εμπεδωμένη'),
+          inBin(s) ? h('span', { class: 'tag warn' }, `στα λάθη σου (${s.bin.days.length}/${RULES.BIN_EXIT_DAYS} μέρες)`) : null,
+          s.level >= RULES.MAX_LEVEL ? h('span', { class: 'tag' }, 'επίπεδο 5 — μέγιστο') : dueForPromotion(s, now) ? h('span', { class: 'tag' }, 'για επανάληψη') : h('span', { class: 'tag' }, 'επανάληψη σε ' + Math.max(1, Math.ceil((s.lastPromoT + RULES.PROMOTION_GAP_MS - now) / 3600000)) + ' ώρες')),
+        h('p', { class: 'small muted' }, `Τελευταία φορά: ${fmtDate(s.lastT)} · ανέβηκε επίπεδο ${s.promoCount} φορές σε ${s.promoDays.length} μέρες`),
         h('div', null, sparkline(s.history, 30)),
         wrongChoices.length ? h('p', { class: 'small' }, 'Λάθος επιλογές: ', wrongChoices.map(([i, n]) => `${LETTERS[i]} ×${n}`).join(', ')) : null,
-        conf.length ? h('div', null, h('p', { class: 'small warn' }, 'Μπερδεύεται με:'), h('div', { class: 'list' }, conf.map((c) => { const o = byId.get(c.id); return o ? h('a', { class: 'qrow', href: `#/q/${c.id}` }, h('span', { class: 'id' }, `#${c.id}`), h('span', { class: 'txt' }, o.text), h('span', { class: 'small muted' }, `×${c.count}`)) : null; }))) : null,
+        conf.length ? h('div', null, h('p', { class: 'small warn' }, 'Την μπερδεύεις με:'), h('div', { class: 'list' }, conf.map((c) => { const o = byId.get(c.id); return o ? h('a', { class: 'qrow', href: `#/q/${c.id}` }, h('span', { class: 'id' }, `#${c.id}`), h('span', { class: 'txt' }, o.text), h('span', { class: 'small muted' }, `×${c.count}`)) : null; }))) : null,
       ) : h('p', { class: 'muted' }, 'Δεν την έχεις απαντήσει ακόμα.'),
     ),
     q.similar && q.similar.length ? h('div', { class: 'card' }, h('h3', null, 'Όμοιες ερωτήσεις'), h('div', { class: 'list' }, q.similar.map((sid) => { const o = byId.get(sid); return o ? h('a', { class: 'qrow', href: `#/q/${sid}` }, h('span', { class: 'id' }, `#${sid}`), h('span', { class: 'txt' }, o.text)) : null; }))) : null,
