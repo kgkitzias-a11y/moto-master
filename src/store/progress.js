@@ -4,6 +4,7 @@ import { sanitizeEvents } from '../engine/events.js';
 import { reduce } from '../engine/reducer.js';
 import { uuid } from '../engine/shuffle.js';
 import { studyPlan } from '../engine/planner.js';
+import { SHARED_KEYS, initialPreferences, mergePreferences, validPreference } from '../sync/preferences.js';
 import { syncOnce, SyncError, decodeEvents, encodeEvents, sortForStorage } from '../sync/gist.js';
 
 export class Progress extends EventTarget {
@@ -14,6 +15,8 @@ export class Progress extends EventTarget {
     this.state = null;
     this.settings = loadSettings();
     if (!this.settings.deviceId) { this.settings.deviceId = uuid().slice(0, 8); saveSettings(this.settings); }
+    this.settings.sharedPreferences = initialPreferences(this.settings);
+    saveSettings(this.settings);
     this.dirty = false;
     this._seq = 0; // bumped on every local append; lets a sync know if new events arrived meanwhile
     this.sync = { status: 'local', lastAt: this.settings.lastSyncAt, error: null, inFlight: null };
@@ -36,7 +39,23 @@ export class Progress extends EventTarget {
   setToken(t) { saveToken(t ? t.trim() : ''); this.dispatchEvent(new Event('sync')); }
 
   updateSettings(patch) {
+    let sharedChanged = false;
+    const sharedPreferences = { ...this.settings.sharedPreferences };
+    for (const key of SHARED_KEYS) if (Object.hasOwn(patch, key) && validPreference(key, patch[key]) && patch[key] !== this.settings[key]) {
+      sharedPreferences[key] = { value: patch[key], t: Date.now(), id: uuid() };
+      sharedChanged = true;
+    }
     this.settings = { ...this.settings, ...patch };
+    this.settings.sharedPreferences = sharedPreferences;
+    saveSettings(this.settings);
+    if (sharedChanged) { this.dirty = true; this._seq++; this._scheduleSync(); }
+    this.dispatchEvent(new Event('settings'));
+  }
+
+  _applyPreferences(incoming) {
+    const sharedPreferences = mergePreferences(this.settings.sharedPreferences, incoming);
+    this.settings = { ...this.settings, sharedPreferences };
+    for (const key of SHARED_KEYS) if (sharedPreferences[key]) this.settings[key] = sharedPreferences[key].value;
     saveSettings(this.settings);
     this.dispatchEvent(new Event('settings'));
   }
@@ -98,6 +117,8 @@ export class Progress extends EventTarget {
       removeLocal: async (ids) => { await deleteEvents(ids); const drop = new Set(ids); this.events = this.events.filter((e) => !drop.has(e.id)); },
       getGistId: () => this.settings.gistId,
       setGistId: (id) => this.updateSettings({ gistId: id }),
+      getPreferences: () => this.settings.sharedPreferences,
+      setPreferences: (prefs) => this._applyPreferences(prefs),
     };
     const seqAtStart = this._seq;
     const run = (async () => {
@@ -107,7 +128,7 @@ export class Progress extends EventTarget {
         const now = Date.now();
         this.updateSettings({ lastSyncAt: now });
         this._setSync({ status: 'synced', lastAt: now, error: null, last: r });
-        if (r.pulled || r.total !== this.events.length) this._recompute();
+        if (r.pulled || r.total !== this.events.length || r.settingsChanged) this._recompute();
         return r;
       } catch (e) {
         const msg = e instanceof SyncError ? e.message : (e && e.message) || 'Σφάλμα';

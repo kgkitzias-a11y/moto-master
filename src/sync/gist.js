@@ -1,8 +1,10 @@
-// GitHub Gist sync: one private gist, one file, union-by-UUID merge.
+// GitHub Gist sync: progress log + shared study settings in one secret gist.
 // The token is passed in by the caller (read from localStorage) and never logged.
 import { sanitizeEvents } from '../engine/events.js';
+import { mergePreferences, sanitizePreferences, samePreferences } from './preferences.js';
 
 export const GIST_FILE = 'moto-master-progress.json';
+export const SETTINGS_FILE = 'moto-master-settings.json';
 const RAW_HOST = 'gist.githubusercontent.com';
 export const GIST_DESC = 'Moto Master — πρόοδος (private, auto-managed)';
 const API = 'https://api.github.com';
@@ -51,8 +53,8 @@ export function decodeEvents(text) {
 }
 
 // Returns the full file text, following raw_url when the API truncated it (>1 MB).
-async function readGistFile(token, gist) {
-  const f = gist.files && gist.files[GIST_FILE];
+async function readGistFile(token, gist, name = GIST_FILE) {
+  const f = gist.files && gist.files[name];
   if (!f) return '';
   if (!f.truncated && typeof f.content === 'string') return f.content;
   let u;
@@ -70,7 +72,17 @@ export async function getGist(token, gistId) {
   const res = await api(token, `/gists/${encodeURIComponent(gistId)}`);
   const gist = await res.json();
   const text = await readGistFile(token, gist);
-  return { gist, events: sanitizeEvents(decodeEvents(text)) };
+  const settingsText = await readGistFile(token, gist, SETTINGS_FILE);
+  let preferences = {};
+  if (settingsText) {
+    let data;
+    try { data = JSON.parse(settingsText); } catch { throw new SyncError('Μη έγκυρες ρυθμίσεις συγχρονισμού', { kind: 'format' }); }
+    if (data?.v !== 1 || !data.settings || typeof data.settings !== 'object' || Array.isArray(data.settings)) {
+      throw new SyncError('Μη αναγνωρίσιμες ρυθμίσεις συγχρονισμού', { kind: 'format' });
+    }
+    preferences = sanitizePreferences(data.settings);
+  }
+  return { gist, events: sanitizeEvents(decodeEvents(text)), preferences };
 }
 
 export async function findGist(token) {
@@ -89,8 +101,10 @@ export async function createGist(token, events) {
   return gist.id;
 }
 
-export async function updateGist(token, gistId, events) {
-  const res = await api(token, `/gists/${encodeURIComponent(gistId)}`, { method: 'PATCH', body: { files: { [GIST_FILE]: { content: encodeEvents(events) } } } });
+export async function updateGist(token, gistId, events, preferences = undefined) {
+  const files = { [GIST_FILE]: { content: encodeEvents(events) } };
+  if (preferences !== undefined) files[SETTINGS_FILE] = { content: JSON.stringify({ v: 1, settings: canon(sanitizePreferences(preferences)) }) };
+  const res = await api(token, `/gists/${encodeURIComponent(gistId)}`, { method: 'PATCH', body: { files } });
   return res.json();
 }
 
@@ -133,14 +147,15 @@ export async function syncOnce(token, io) {
   if (!token) throw new SyncError('Χωρίς token', { kind: 'auth' });
   let gistId = io.getGistId();
   let remote = [];
+  let remotePreferences = {};
   if (gistId) {
-    try { ({ events: remote } = await getGist(token, gistId)); }
+    try { ({ events: remote, preferences: remotePreferences } = await getGist(token, gistId)); }
     catch (e) { if (e.kind === 'notfound') { gistId = null; } else throw e; }
   }
   if (!gistId) {
     const r = await findOrCreateGist(token);
     gistId = r.id; io.setGistId(gistId);
-    if (!r.created) ({ events: remote } = await getGist(token, gistId));
+    if (!r.created) ({ events: remote, preferences: remotePreferences } = await getGist(token, gistId));
   }
   const local = await io.loadLocal();
   const { merged, onlyLocal, onlyRemote } = mergeEvents(local, remote);
@@ -154,12 +169,17 @@ export async function syncOnce(token, io) {
   if (stale.length && io.removeLocal) await io.removeLocal(stale);
   const push = onlyLocal.filter((e) => keep.has(e.id));
   const remoteStale = remote.some((e) => !keep.has(e.id));
+  const localPreferences = io.getPreferences?.();
+  const preferences = localPreferences === undefined ? undefined : mergePreferences(localPreferences, remotePreferences);
+  const settingsChanged = preferences !== undefined && !samePreferences(localPreferences, preferences);
+  const settingsPush = preferences !== undefined && !samePreferences(remotePreferences, preferences);
+  if (preferences !== undefined) io.setPreferences?.(preferences);
   let pushed = 0;
-  if (push.length || remoteStale) {
-    await updateGist(token, gistId, sortForStorage(compacted));
+  if (push.length || remoteStale || settingsPush) {
+    await updateGist(token, gistId, sortForStorage(compacted), preferences);
     pushed = push.length;
   }
-  return { pushed, pulled: pull.length, gistId, total: compacted.length };
+  return { pushed, pulled: pull.length, gistId, total: compacted.length, settingsChanged };
 }
 
 export function sortForStorage(events) {

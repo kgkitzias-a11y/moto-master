@@ -125,10 +125,15 @@ async function main() {
   window.addEventListener('hashchange', route);
   route();
   registerSW();
-  // sync triggers: on open, on hidden, every 60 s while dirty (inside Progress)
+  // Pull when returning to an already-open iPhone app, not only on a full reload.
   ctx.progress.syncNow('open');
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && ctx.progress.dirty) ctx.progress.syncNow('hidden'); });
-  window.addEventListener('online', () => { if (ctx.progress.dirty) ctx.progress.syncNow('online'); });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden || ctx.progress.dirty) ctx.progress.syncNow(document.hidden ? 'hidden' : 'visible');
+  });
+  window.addEventListener('online', () => ctx.progress.syncNow('online'));
+  setInterval(() => {
+    if (!document.hidden && navigator.onLine && ctx.progress.token) ctx.progress.syncNow('refresh');
+  }, 60000);
   // An installed app can stay open overnight. Refresh today's plan without
   // interrupting a test or replacing a date input while the user edits it.
   let displayedDay = dayKey(Date.now());

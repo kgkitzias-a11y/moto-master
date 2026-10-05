@@ -29,7 +29,7 @@ export function renderSettings(ctx) {
   const refreshSyncInfo = () => {
     const st = p.sync;
     syncInfo.textContent = hasToken || p.token
-      ? `Gist: ${s.gistId ? s.gistId : '— (θα δημιουργηθεί)'} · Τελευταίος συγχρονισμός: ${fmtDate(st.lastAt)}${st.error ? ' · Σφάλμα: ' + st.error : ''} · ${p.events.length} εγγραφές τοπικά`
+      ? `Gist: ${p.settings.gistId || '— (θα δημιουργηθεί)'} · Τελευταίος συγχρονισμός: ${fmtDate(st.lastAt)}${st.error ? ' · Σφάλμα: ' + st.error : ''} · ${p.events.length} εγγραφές τοπικά`
       : 'Χωρίς token η πρόοδος μένει μόνο σε αυτή τη συσκευή.';
   };
   refreshSyncInfo();
@@ -44,7 +44,7 @@ export function renderSettings(ctx) {
     ctx.toast(r ? `Συγχρονίστηκε (${r.total} εγγραφές)` : `Σφάλμα: ${p.sync.error || ''}`);
     ctx.navigate('#/settings'); route();
   } }, 'Αποθήκευση & συγχρονισμός');
-  const syncNowBtn = h('button', { class: 'btn', type: 'button', disabled: !hasToken, onClick: async () => { const r = await p.syncNow('manual'); ctx.toast(r ? `Συγχρονίστηκε: ${r.pulled} ↓ ${r.pushed} ↑` : `Σφάλμα: ${p.sync.error || ''}`); } }, 'Συγχρονισμός τώρα');
+  const syncNowBtn = h('button', { class: 'btn', type: 'button', disabled: !hasToken, onClick: async () => { const r = await p.syncNow('manual'); ctx.toast(r ? `Συγχρονίστηκε: ${r.pulled} ↓ ${r.pushed} ↑` : `Σφάλμα: ${p.sync.error || ''}`); route(); } }, 'Συγχρονισμός τώρα');
   const forgetBtn = h('button', { class: 'btn btn-ghost', type: 'button', disabled: !hasToken, onClick: () => { if (confirm('Να αφαιρεθεί το token από αυτή τη συσκευή; Η πρόοδος μένει στη συσκευή.')) { p.setToken(''); route(); } } }, 'Αφαίρεση token');
 
   // ---- pairing ----
@@ -52,7 +52,7 @@ export function renderSettings(ctx) {
   const showPairing = async () => {
     if (!p.token) { ctx.toast('Αποθήκευσε πρώτα ένα token σε αυτή τη συσκευή.'); return; }
     try { await loadScript('./src/vendor/qrcode.js'); } catch (e) { ctx.toast('Η βιβλιοθήκη QR δεν φορτώθηκε.'); return; }
-    const str = encodePairing({ token: p.token, gistId: s.gistId });
+    const str = encodePairing({ token: p.token, gistId: p.settings.gistId });
     const payload = `mm1:${str}`; // deliberately NOT a URL: camera apps must not open it in Safari or keep it in URL history
     pairBox.replaceChildren();
     try {
@@ -125,7 +125,7 @@ export function renderSettings(ctx) {
   const resetBtn = h('button', { class: 'btn btn-danger', type: 'button', onClick: async () => {
     if (!confirm('Να διαγραφεί όλη η πρόοδος; Θα χαθούν επίπεδα, στατιστικά και ιστορικό (σε όλες τις συγχρονισμένες συσκευές).')) return;
     if (!confirm('Σίγουρα; Δεν αναιρείται.')) return;
-    await p.reset(); ctx.toast('Η πρόοδος διαγράφηκε.'); route();
+    await p.reset(); ctx.toast('Η πρόοδος διαγράφηκε.'); route(); p.syncNow('reset');
   } }, 'Διαγραφή προόδου');
 
   const cacheBtn = h('button', { class: 'btn btn-ghost', type: 'button', onClick: async () => {
@@ -141,7 +141,12 @@ export function renderSettings(ctx) {
     planControls(ctx),
     h('div', { class: 'card' },
       h('h3', null, 'Συγχρονισμός (GitHub Gist)'),
-      h('p', { class: 'small muted' }, 'Χρειάζεται ένα GitHub token με ΜΟΝΟ το δικαίωμα gist (classic token, scope «gist»). Δες το README για τα ακριβή βήματα. Το token μένει μόνο σε αυτή τη συσκευή.'),
+      h('p', { class: 'small muted' }, 'Ίδια πρόοδος, ημερομηνία εξετάσεων και επιλογές μελέτης σε PC και iPhone. Ο υπολογιστής δεν χρειάζεται να μένει ανοιχτός.'),
+      h('ol', { class: 'small' },
+        h('li', null, h('a', { href: 'https://github.com/settings/tokens/new', target: '_blank', rel: 'noopener noreferrer' }, 'Δημιούργησε GitHub token'), ' (classic), μόνο με το δικαίωμα «gist».'),
+        h('li', null, 'Επικόλλησέ το παρακάτω και πάτησε «Αποθήκευση & συγχρονισμός».'),
+        h('li', null, 'Εμφάνισε το QR. Στο iPhone άνοιξε την εγκατεστημένη εφαρμογή → Ρυθμίσεις → Σάρωση QR.')),
+      h('p', { class: 'small muted' }, 'Η πρόοδος αποθηκεύεται σε μη καταχωρισμένο (secret) GitHub Gist. Ο κωδικός σύνδεσης περιέχει το token· κράτησέ τον για τις δικές σου συσκευές.'),
       h('label', null, 'GitHub token'), tokenInput,
       h('div', { class: 'btn-row', style: { marginTop: '8px' } }, saveTokenBtn, syncNowBtn),
       h('div', { style: { marginTop: '6px' } }, forgetBtn),
@@ -156,7 +161,7 @@ export function renderSettings(ctx) {
       h('h3', null, 'Στόχος & κίνητρο'),
       h('label', { htmlFor: 'manual-goal' }, 'Χειροκίνητος στόχος (χωρίς μελλοντική ημερομηνία)'),
       h('input', { id: 'manual-goal', type: 'number', inputmode: 'numeric', min: 10, max: 400, step: 10, disabled: p.plan().automatic, value: s.dailyGoal || 40, onChange: (e) => p.updateSettings({ dailyGoal: Math.max(10, Math.min(400, Number(e.target.value) || 40)) }) }),
-      h('p', { class: 'small muted' }, 'Με ημερομηνία εξετάσεων, ο στόχος υπολογίζεται αυτόματα στην αρχική. Η ημερομηνία και οι ρυθμίσεις αποθηκεύονται ξεχωριστά σε κάθε συσκευή.'),
+      h('p', { class: 'small muted' }, 'Η ημερομηνία, ο στόχος και οι επιλογές μελέτης συγχρονίζονται στις συνδεδεμένες συσκευές. Η εμφάνιση, οι ήχοι και η δόνηση μένουν ξεχωριστά σε κάθε συσκευή.'),
       h('p', { class: 'small muted' }, 'Η μέρα μετράει στο σερί όταν πιάσεις τον στόχο απαντήσεων ή ολοκληρώσεις τη σημερινή εξάσκηση («Σήμερα»)· αλλιώς το σερί χάνεται τα μεσάνυχτα.'),
       h('label', null, 'Εμφάνιση'),
       h('select', { onChange: (e) => p.updateSettings({ theme: e.target.value }) },

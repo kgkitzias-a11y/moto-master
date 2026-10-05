@@ -92,7 +92,7 @@ export async function clearEvents() {
   });
 }
 
-// ---- settings (device-local, never synced) ----
+// ---- settings (local storage; Progress syncs whitelisted study choices only) ----
 const SETTINGS_KEY = 'mm.settings';
 export const DEFAULT_SETTINGS = Object.freeze({
   hardMode: false,
