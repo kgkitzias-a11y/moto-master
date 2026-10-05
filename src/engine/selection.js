@@ -147,10 +147,10 @@ export function numbers(pool, rnd = Math.random) {
   return shuffleArray(pool.filter((q) => NUM_RE.test(q.text) || q.options.some((o) => NUM_RE.test(o))).map((q) => q.id), rnd);
 }
 
-// Continue toward today's goal: the daily-drill order, cut to what is still missing (min 5).
+// Continue toward today's goal, including a final batch smaller than five.
 export function towardGoal(pool, state, now, remaining, rnd = Math.random) {
   const order = dueToday(pool, state, now, rnd);
-  const n = Math.max(5, remaining);
+  const n = Math.max(0, Math.ceil(remaining));
   if (order.length >= n) return order.slice(0, n);
   // Everything is on schedule: keep training on the rest of the pool, weakest first.
   const seen = new Set(order);

@@ -1,5 +1,7 @@
 # MOTO MASTER — HANDOFF / SAVE / SUMMON (2026-09-15)
 
+> **Update 2026-10-05 — v1.4.0:** Exam-date daily planner added (D-030); see README §10. Date/tentative status live on each device. Coverage and daily reviews have separate quotas; missed days/date edits recalculate. Same-day reset no longer leaves old answers in the daily count. No reset migration is shipped. The owner explicitly requested a personal reset on 2026-10-05, superseding the older “no resets” preference below for that action only. Validation: 198 unit and 33 end-to-end tests passed, including offline and Gist sync. Dataset unchanged.
+
 > **How to resume:** open Claude Code in any folder and paste the block in §0. It contains everything the next session needs. Everything else in this file is the detailed state it will read from disk.
 
 ---

@@ -56,7 +56,9 @@ export function buildQueue(mode, questions, state, settings, now, params = {}, r
       const p = params.policy || 'random';
       return p === 'sequential' ? sel.sequential(pool) : sel.random(pool, params.count || 20, rnd);
     }
-    case MODES.goal: return sel.towardGoal(pool, state, now, params.remaining || 20, rnd);
+    case MODES.goal: return Array.isArray(params.plannedIds)
+      ? [...new Set(params.plannedIds)].filter((id) => pool.some((q) => q.id === id))
+      : sel.towardGoal(pool, state, now, params.remaining ?? 20, rnd);
     case MODES.ptest: return sel.practiceTest(questions, params.set === undefined ? 0 : params.set, rnd);
     case MODES.marathon: return sel.random(pool, 0, rnd);
     case MODES.hardest: return sel.hardest(pool, state, params.count || RULES.HARDEST_COUNT, rnd);

@@ -1,4 +1,5 @@
 import { VERSION } from './version.js';
+import { dayKey } from './engine/time.js';
 import { Progress } from './store/progress.js';
 import { decodePairing } from './sync/gist.js';
 import { h, clear, fmtRel } from './ui/dom.js';
@@ -128,6 +129,16 @@ async function main() {
   ctx.progress.syncNow('open');
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && ctx.progress.dirty) ctx.progress.syncNow('hidden'); });
   window.addEventListener('online', () => { if (ctx.progress.dirty) ctx.progress.syncNow('online'); });
+  // An installed app can stay open overnight. Refresh today's plan without
+  // interrupting a test or replacing a date input while the user edits it.
+  let displayedDay = dayKey(Date.now());
+  const refreshDay = () => {
+    const today = dayKey(Date.now());
+    const home = !location.hash || location.hash === '#/' || location.hash === '#';
+    if (home && today !== displayedDay && !document.hidden) { displayedDay = today; route(); }
+  };
+  document.addEventListener('visibilitychange', refreshDay);
+  setInterval(refreshDay, 30000);
   setInterval(renderSyncPill, 30000);
 }
 

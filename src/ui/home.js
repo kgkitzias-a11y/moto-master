@@ -5,6 +5,8 @@ import { readiness, dueStreak, dueList, inBin, isSolid } from '../engine/reducer
 import { RULES, MODES } from '../engine/constants.js';
 import { startSession } from '../engine/session.js';
 import { dayKey } from '../engine/time.js';
+import { planControls } from './planner.js';
+export { answersToday } from '../engine/planner.js';
 
 export function ring(pct, label, sub, cls = '') {
   const r = 38, c = 2 * Math.PI * r;
@@ -67,27 +69,12 @@ export function readinessCard(ctx) {
   );
 }
 
-// Answers recorded today (local day) — drives the daily-goal bar.
-export function answersToday(progress, now = Date.now()) {
-  const today = dayKey(now);
-  let n = 0;
-  for (const e of progress.events) if (e.k === 'answer' && dayKey(e.t) === today) n++;
-  return n;
-}
-
-function examCountdown(settings, now) {
-  if (!settings.examDate) return null;
-  const d = new Date(settings.examDate + 'T09:00:00');
-  if (Number.isNaN(d.getTime())) return null;
-  const days = Math.ceil((d.getTime() - now) / 86400000);
-  return { days, urgent: days <= 7 };
-}
-
 function recommend(ctx, due, bin, weakCount, remainingToGoal, todayDone) {
   // Single best next action (removes the choice cost that kills habits).
+  if (remainingToGoal === 0) return { mode: bin ? MODES.wrong : MODES.exam, params: {}, title: 'Ο σημερινός στόχος ολοκληρώθηκε', sub: bin ? 'Συνέχισε με τα λάθη σου.' : 'Συνέχισε με μια προσομοίωση εξετάσεων.', label: 'Ξεκίνα τώρα ▶' };
   if (remainingToGoal > 0 && (todayDone || due === 0)) return { mode: MODES.goal, params: { remaining: remainingToGoal }, title: 'Συνέχισε προς τον στόχο', sub: `${remainingToGoal} ερωτήσεις ακόμα για το σημερινό ${ctx.progress.settings.dailyGoal || 40}.`, label: `Συνέχισε (${remainingToGoal} ακόμα) ▶` };
   if (due > 0 && due <= Math.max(remainingToGoal, 5)) return { mode: MODES.due, params: {}, title: 'Η σημερινή εξάσκηση', sub: `Σε περιμένουν ${due} ερωτήσεις — ${bin ? bin + ' από τα λάθη σου, ' : ''}ένας γύρος και τελείωσες.`, label: 'Ξεκίνα τώρα ▶' };
-  if (due > 0) return { mode: MODES.goal, params: { remaining: remainingToGoal }, title: 'Η σημερινή εξάσκηση', sub: `${due} ερωτήσεις είναι για επανάληψη — ${bin ? bin + ' από τα λάθη σου. ' : ''}Παίρνεις τις ${Math.max(5, remainingToGoal)} επόμενες προς τον στόχο.`, label: remainingToGoal > 0 && remainingToGoal < (ctx.progress.settings.dailyGoal || 40) ? `Συνέχισε (${remainingToGoal} ακόμα) ▶` : 'Ξεκίνα τώρα ▶' };
+  if (due > 0) return { mode: MODES.goal, params: { remaining: remainingToGoal }, title: 'Η σημερινή εξάσκηση', sub: `${due} ερωτήσεις είναι για επανάληψη — ${bin ? bin + ' από τα λάθη σου. ' : ''}Παίρνεις τις ${remainingToGoal} επόμενες προς τον στόχο.`, label: remainingToGoal < (ctx.progress.settings.dailyGoal || 40) ? `Συνέχισε (${remainingToGoal} ακόμα) ▶` : 'Ξεκίνα τώρα ▶' };
   if (bin > 0) return { mode: MODES.wrong, params: {}, title: 'Διόρθωσε τα λάθη σου', sub: `${bin} ερωτήσεις που σε έριξαν. Μέχρι να μη μείνει καμία.`, label: 'Ξεκίνα τώρα ▶' };
   if (weakCount > 0) return { mode: MODES.tomorrow, params: {}, title: 'Δούλεψε τις αδύναμες', sub: `${weakCount} ερωτήσεις κάτω από επίπεδο ${RULES.WEAK_LEVEL}.`, label: 'Ξεκίνα τώρα ▶' };
   return { mode: MODES.exam, params: {}, title: 'Προσομοίωση εξετάσεων', sub: '10 ερωτήσεις, 10 λεπτά, το πολύ 1 λάθος. Όπως στις πραγματικές εξετάσεις.', label: 'Ξεκίνα τώρα ▶' };
@@ -105,12 +92,21 @@ export function renderHome(ctx) {
   const todayDone = st.dueDays.includes(dayKey(now));
   const hour = new Date(now).getHours();
   const streakAtRisk = !todayDone && streak > 0 && hour >= 18; // loss aversion, only when it is real
-  const ans = answersToday(p, now);
-  const goal = s.dailyGoal || 40;
-  const goalPct = Math.min(1, ans / goal);
-  const cd = examCountdown(s, now);
-  const remainingToGoal = Math.max(0, goal - ans);
-  const rec = recommend(ctx, due, bin, weakCount, remainingToGoal, todayDone);
+  const plan = p.plan(now);
+  const ans = plan.automatic ? plan.done : plan.answerCount;
+  const goal = plan.target;
+  const goalPct = goal ? Math.min(1, ans / goal) : 1;
+  const cd = plan.days === null ? null : { days: plan.days };
+  const remainingToGoal = plan.remaining;
+  const rec = plan.automatic && remainingToGoal > 0
+    ? { mode: MODES.goal, params: { plannedIds: plan.queue }, title: 'Το σημερινό σου πλάνο',
+      sub: `${plan.newRemaining} νέες + ${plan.reviewTarget - plan.reviewDone} για επανάληψη απομένουν.`,
+      label: `Συνέχισε (${remainingToGoal} ακόμα) ▶` }
+    : plan.automatic
+      ? { mode: bin ? MODES.wrong : MODES.exam, params: {}, title: 'Ο σημερινός στόχος ολοκληρώθηκε',
+        sub: bin ? `${bin} ερωτήσεις παραμένουν στα λάθη σου. Κάνε έναν επιπλέον γύρο.` : 'Συνέχισε με μια προσομοίωση για να ελέγξεις την ετοιμότητά σου.',
+        label: bin ? 'Επανάληψη λαθών ▶' : 'Προσομοίωση εξετάσεων ▶' }
+      : recommend(ctx, due, bin, weakCount, remainingToGoal, todayDone);
   const start = (mode, params = {}) => { ctx.session = startSession(mode, { questions: ctx.questions, state: st, settings: s, params }); if (ctx.session.isEmpty) { ctx.toast('Δεν υπάρχουν ερωτήσεις για αυτό το τεστ τώρα.'); return; } ctx.navigate('#/session'); };
 
   const hero = h('div', { class: 'card hero' },
@@ -120,11 +116,12 @@ export function renderHome(ctx) {
     h('div', { class: 'rings' },
       ring(r.mastery.pct / 100, `${Math.round(r.mastery.pct)}%`, 'ΕΜΠΕΔΩΣΗ', r.masteryOk ? 'gold' : ''),
       h('div', { style: { flex: 1 } },
-        h('div', { class: 'row between small' }, h('span', null, h('b', { class: 'num' }, `${ans}/${goal}`), ' απαντήσεις σήμερα'), h('span', { class: goalPct >= 1 ? 'ok' : 'muted' }, goalPct >= 1 ? 'στόχος ✓' : `${goal - ans} ακόμα`)),
+        h('div', { class: 'row between small' }, h('span', null, h('b', { class: 'num' }, `${ans}/${goal}`), plan.automatic ? ' ερωτήσεις του πλάνου' : ' απαντήσεις σήμερα'), h('span', { class: goalPct >= 1 ? 'ok' : 'muted' }, goalPct >= 1 ? 'στόχος ✓' : `${remainingToGoal} ακόμα`)),
         h('div', { class: `goalbar ${goalPct >= 1 ? 'done' : ''}` }, h('div', { style: { width: `${goalPct * 100}%` } })),
+        plan.automatic ? h('p', { class: 'small muted' }, `Νέες ${plan.newDone}/${plan.newTarget} · Επανάληψη ${plan.reviewDone}/${plan.reviewTarget} · ${plan.answerCount} απαντήσεις σήμερα`) : null,
         h('div', { class: 'kpis', style: { marginTop: '8px' } },
           h('div', { class: `kpi ${streakAtRisk ? 'danger' : ''}` }, h('div', { class: 'v' }, `${streak}🔥`), h('div', { class: 'l' }, streakAtRisk ? 'κινδυνεύει το σερί!' : 'μέρες σερί')),
-          h('div', { class: 'kpi' }, h('div', { class: 'v' }, due), h('div', { class: 'l' }, 'για σήμερα')),
+          h('div', { class: 'kpi' }, h('div', { class: 'v' }, plan.automatic ? remainingToGoal : due), h('div', { class: 'l' }, 'για σήμερα')),
           h('div', { class: 'kpi' }, h('div', { class: 'v' }, bin), h('div', { class: 'l' }, 'τα λάθη σου'))))),
     h('button', { class: 'btn btn-primary btn-block btn-hero', type: 'button', id: 'hero-btn', onClick: () => start(rec.mode, rec.params) }, rec.label),
     streakAtRisk ? h('p', { class: 'small bad', style: { marginTop: '8px', textAlign: 'center' } }, `Αν δεν πιάσεις τον σημερινό στόχο μέχρι τα μεσάνυχτα, χάνεις τις ${streak} μέρες σερί.`) : null,
@@ -162,6 +159,7 @@ export function renderHome(ctx) {
 
   return h('div', null,
     hero,
+    planControls(ctx),
     progressCard(ctx),
     readinessCard(ctx),
     h('div', { class: 'row between', style: { marginTop: '18px' } }, h('h2', { style: { margin: 0 } }, 'Τεστ εξάσκησης'), h('span', { class: 'small muted' }, `${passedCount}/${sets.length} με 100 %`)),

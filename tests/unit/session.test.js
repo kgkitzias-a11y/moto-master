@@ -665,13 +665,13 @@ describe('Session engine: Genie-style modes', () => {
   });
 
   describe('goal (continue toward the daily goal)', () => {
-    test('buildQueue(goal, ..., {remaining: 7}) returns 7 distinct ids; default remaining is 20; min 5', () => {
+    test('buildQueue(goal) returns the exact remainder; default remaining is 20', () => {
       const G = genQuestions(30);
       const q7 = buildQueue(MODES.goal, G, emptyState(), {}, T0, { remaining: 7 }, mulberry32(1));
       assert.equal(q7.length, 7);
       assert.equal(new Set(q7).size, 7);
       assert.equal(buildQueue(MODES.goal, G, emptyState(), {}, T0, {}, mulberry32(1)).length, 20);
-      assert.equal(buildQueue(MODES.goal, G, emptyState(), {}, T0, { remaining: 2 }, mulberry32(1)).length, 5);
+      assert.equal(buildQueue(MODES.goal, G, emptyState(), {}, T0, { remaining: 2 }, mulberry32(1)).length, 2);
       const s = startSession(MODES.goal, { questions: G, state: emptyState(), settings: {}, now: T0, params: { remaining: 7 }, rnd: mulberry32(2) });
       assert.equal(s.total, 7);
       assert.equal(PRESETS[MODES.goal].feedback, 'immediate');

@@ -3,6 +3,7 @@ import { loadEvents, addEvents, deleteEvents, clearEvents, loadSettings, saveSet
 import { sanitizeEvents } from '../engine/events.js';
 import { reduce } from '../engine/reducer.js';
 import { uuid } from '../engine/shuffle.js';
+import { studyPlan } from '../engine/planner.js';
 import { syncOnce, SyncError, decodeEvents, encodeEvents, sortForStorage } from '../sync/gist.js';
 
 export class Progress extends EventTarget {
@@ -31,6 +32,7 @@ export class Progress extends EventTarget {
   }
 
   get token() { return loadToken(); }
+  plan(now = Date.now()) { return studyPlan(this.questions, this.events, this.settings, now); }
   setToken(t) { saveToken(t ? t.trim() : ''); this.dispatchEvent(new Event('sync')); }
 
   updateSettings(patch) {

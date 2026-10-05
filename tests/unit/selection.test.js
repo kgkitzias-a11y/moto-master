@@ -416,12 +416,12 @@ describe('selection: numbers', () => {
 describe('selection: towardGoal', () => {
   const Q = genQuestions(30);
 
-  test('length = max(5, remaining) when the pool is big enough', () => {
+  test('length = remaining, including a final short or empty batch', () => {
     const st = emptyState();
     assert.equal(towardGoal(Q, st, NOW, 7, mulberry32(1)).length, 7);
     assert.equal(towardGoal(Q, st, NOW, 20, mulberry32(1)).length, 20);
-    assert.equal(towardGoal(Q, st, NOW, 2, mulberry32(1)).length, 5);
-    assert.equal(towardGoal(Q, st, NOW, 0, mulberry32(1)).length, 5);
+    assert.equal(towardGoal(Q, st, NOW, 2, mulberry32(1)).length, 2);
+    assert.equal(towardGoal(Q, st, NOW, 0, mulberry32(1)).length, 0);
     assert.equal(towardGoal(Q, st, NOW, 30, mulberry32(1)).length, 30);
   });
 

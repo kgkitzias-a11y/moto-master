@@ -193,3 +193,8 @@ details summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .ladder { display: flex; height: 12px; border-radius: 999px; overflow: hidden; border: 1px solid var(--line); background: var(--line); gap: 1px; }
 .ladder .lvl { min-width: 0; }
 .ladder .l0 { background: var(--line2); } .ladder .l1 { background: #7c5cff; } .ladder .l2 { background: var(--info); } .ladder .l3 { background: var(--accent); } .ladder .l4 { background: var(--warn); } .ladder .l5 { background: var(--ok); }
+:root .plan-tentative { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-top: 12px; }
+:root .plan-tentative input { width: 18px; height: 18px; flex-shrink: 0; }
+.study-plan h3 { margin: 0; }
+.plan-details p { margin: 10px 0 0; }
+.study-plan input[type="date"] { width: 100%; min-width: 0; box-sizing: border-box; }

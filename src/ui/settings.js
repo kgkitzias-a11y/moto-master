@@ -1,5 +1,6 @@
 import { h, fmtDate } from './dom.js';
 import { encodePairing, decodePairing } from '../sync/gist.js';
+import { planControls } from './planner.js';
 
 // Vendor scripts are loaded on demand (only this screen needs them).
 const loaded = {};
@@ -137,6 +138,7 @@ export function renderSettings(ctx) {
 
   return h('div', null,
     h('h1', null, 'Ρυθμίσεις'),
+    planControls(ctx),
     h('div', { class: 'card' },
       h('h3', null, 'Συγχρονισμός (GitHub Gist)'),
       h('p', { class: 'small muted' }, 'Χρειάζεται ένα GitHub token με ΜΟΝΟ το δικαίωμα gist (classic token, scope «gist»). Δες το README για τα ακριβή βήματα. Το token μένει μόνο σε αυτή τη συσκευή.'),
@@ -152,10 +154,9 @@ export function renderSettings(ctx) {
       h('button', { class: 'btn btn-block', type: 'button', style: { marginTop: '8px' }, onClick: () => applyPairing(pairInput.value) }, 'Σύνδεση με κωδικό')),
     h('div', { class: 'card' },
       h('h3', null, 'Στόχος & κίνητρο'),
-      h('label', null, 'Ημερομηνία εξετάσεων (αντίστροφη μέτρηση στην αρχική)'),
-      h('input', { type: 'date', value: s.examDate || '', onChange: (e) => p.updateSettings({ examDate: e.target.value || null }) }),
-      h('label', null, 'Ημερήσιος στόχος απαντήσεων'),
-      h('input', { type: 'number', inputmode: 'numeric', min: 10, max: 400, step: 10, value: s.dailyGoal || 40, onChange: (e) => p.updateSettings({ dailyGoal: Math.max(10, Math.min(400, Number(e.target.value) || 40)) }) }),
+      h('label', { htmlFor: 'manual-goal' }, 'Χειροκίνητος στόχος (χωρίς μελλοντική ημερομηνία)'),
+      h('input', { id: 'manual-goal', type: 'number', inputmode: 'numeric', min: 10, max: 400, step: 10, disabled: p.plan().automatic, value: s.dailyGoal || 40, onChange: (e) => p.updateSettings({ dailyGoal: Math.max(10, Math.min(400, Number(e.target.value) || 40)) }) }),
+      h('p', { class: 'small muted' }, 'Με ημερομηνία εξετάσεων, ο στόχος υπολογίζεται αυτόματα στην αρχική. Η ημερομηνία και οι ρυθμίσεις αποθηκεύονται ξεχωριστά σε κάθε συσκευή.'),
       h('p', { class: 'small muted' }, 'Η μέρα μετράει στο σερί όταν πιάσεις τον στόχο απαντήσεων ή ολοκληρώσεις τη σημερινή εξάσκηση («Σήμερα»)· αλλιώς το σερί χάνεται τα μεσάνυχτα.'),
       h('label', null, 'Εμφάνιση'),
       h('select', { onChange: (e) => p.updateSettings({ theme: e.target.value }) },

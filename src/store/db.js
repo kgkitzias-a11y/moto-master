@@ -102,7 +102,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   lastSyncAt: null,
   deviceId: null,
   seenVersion: null,
-  examDate: null,        // 'YYYY-MM-DD' → countdown on the home screen
+  examDate: null,        // 'YYYY-MM-DD' → automatic daily study plan
+  examTentative: false,
   dailyGoal: 40,         // answers per day (goal-gradient bar)
   sound: true,           // feedback ticks
   haptics: true,         // vibrate on Android
