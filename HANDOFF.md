@@ -1,4 +1,6 @@
-# MOTO MASTER — HANDOFF / SAVE / SUMMON (updated 2026-10-07, v1.8.0)
+# MOTO MASTER — HANDOFF / SAVE / SUMMON (updated 2026-10-07, v1.9.0)
+
+> **Update 2026-10-07 — save point after v1.9.0:** everything committed and pushed; working clone and mirror (`C:\moto_master`) on the same commit; live site serves 1.9.0. No open work in progress.
 
 > **Update 2026-10-07 — v1.9.0:** «Ώρα εξετάσεων» setting next to the date (synced `examTime`, default 09:00); the pass chance is computed for that moment (D-042). Validation: 232 unit + 43 e2e.
 
@@ -72,7 +74,7 @@ Then tell me in 5 lines what state the project is in and ask what I want next.
 - Daily goal / planner: exam-date quotas (new + reviews); streak day = goal reached or «Σήμερα» completed.
 
 ### Home layout (top to bottom)
-«Τελική ευθεία» (phase by days left: daily steps / eve / exam day; pass chance at the exam + now + weakest; «Τελικός έλεγχος» count; «Επιπλέον γύρος ▶») → «Πρόγραμμα» (6 stages: Τεστ 1–3, Τεστ 4–7, Μαραθώνιος χωρίς λάθος, 3×10/10 στη σειρά, λάθη καθαρά ×2, έτοιμος; one «Επόμενο ▶») → daily-plan hero → plan controls → progress → 5-gate readiness → mode sections (Εξετάσεις · Επανάληψη incl. Τελικός έλεγχος, Πρωί των εξετάσεων, Επιπλέον γύρος · Εξάσκηση · Σκληρά τεστ incl. Δίδυμες ερωτήσεις) → Κάρτες, Σκονάκι.
+«Τελική ευθεία» (phase by days left: daily steps / eve / exam day; pass chance at the exam + now + weakest; «Τελικός έλεγχος» count; «Επιπλέον γύρος ▶») → «Πρόγραμμα» (6 stages: Τεστ 1–3, Τεστ 4–7, Μαραθώνιος χωρίς λάθος, 3×10/10 στη σειρά, λάθη καθαρά ×2, έτοιμος; one «Επόμενο ▶») → daily-plan hero → plan controls (exam date + «Ώρα εξετάσεων» + tentative) → progress → 5-gate readiness → mode sections (Εξετάσεις · Επανάληψη incl. Τελικός έλεγχος, Πρωί των εξετάσεων, Επιπλέον γύρος · Εξάσκηση · Σκληρά τεστ incl. Δίδυμες ερωτήσεις) → Κάρτες, Σκονάκι.
 
 ---
 
@@ -94,6 +96,7 @@ Then tell me in 5 lines what state the project is in and ask what I want next.
 - Playwright blocks service workers by default; offline/pwa specs opt back in. In a manual preview, the service worker serves stale modules after edits — unregister it and clear caches before reloading.
 - Exam-simulation question ids are hidden (`hidden` attribute); e2e helpers must wait for `attached`, not `visible`, and must wait for the next screen (`ερώτηση N/10`) between answers.
 - The built-in browser preview uses a `.claude/launch.json` (git-excluded via `.git/info/exclude`).
+- `<input type="time">` shows 12 h ("09:00 AM") in an en-US browser and 24 h on a Greek iPhone; the stored value is always 'HH:MM' 24 h. Keep its grid column ≥ 140 px so the AM/PM suffix is not clipped.
 - Never put the owner's progress or the Gist id in the repo (it is public, and a secret Gist is readable by anyone with its id).
 
 ## §4 — Owner profile (for tone and decisions)
