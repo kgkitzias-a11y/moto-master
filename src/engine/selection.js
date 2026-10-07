@@ -148,7 +148,7 @@ export function numbers(pool, rnd = Math.random) {
 }
 
 // ---------- exam-faithful additions (v1.6) ----------
-import { isProven } from './chance.js';
+import { isProven, questionChance, STREAK_GAP_MS } from './chance.js';
 
 // The real questionnaire: one random question from each official group 1–10, shown in a random
 // order. Data without groups (synthetic fixtures) falls back to `count` random questions.
@@ -202,6 +202,22 @@ export function morning(pool, state, rnd = Math.random) {
   twins(pool, rnd).forEach(add);
   numbers(pool, rnd).forEach(add);
   return out;
+}
+
+// «Επιπλέον γύρος»: the booklet questions whose improvement lifts the pass chance most. A question
+// weighs (1 − its chance) / size of its official group, because the exam draws one per group.
+// Questions answered right within the last hour wait (another answer now would not count).
+export function grind(pool, state, now, count = RULES.GRIND_COUNT, rnd = Math.random) {
+  const booklet = pool.filter((q) => q.tier === 'booklet');
+  const sizes = new Map();
+  for (const q of booklet) sizes.set(q.group, (sizes.get(q.group) || 0) + 1);
+  const scored = booklet.map((q) => {
+    const s = state.q[q.id];
+    const fresh = !!(s && s.lastOk && s.lastT !== null && now - s.lastT < STREAK_GAP_MS);
+    return { id: q.id, fresh, gain: (1 - questionChance(s, now)) / (Number.isInteger(q.group) ? sizes.get(q.group) : 1), tie: rnd() };
+  });
+  scored.sort((a, b) => (a.fresh - b.fresh) || (b.gain - a.gain) || (a.tie - b.tie));
+  return shuffleArray(scored.slice(0, count).map((x) => x.id), rnd);
 }
 
 // Continue toward today's goal, including a final batch smaller than five.

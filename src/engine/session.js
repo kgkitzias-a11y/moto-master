@@ -23,14 +23,15 @@ export const PRESETS = {
   [MODES.signs]:       { label: 'Μόνο σήματα', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
   [MODES.recall]:      { label: 'Από μνήμης', timerMs: null, perQuestionMs: null, shuffle: false, feedback: 'immediate', endRule: 'queue', loop: false, recall: true },
   [MODES.goal]:        { label: 'Προς τον στόχο', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.ptest]:       { label: 'Τεστ εξάσκησης', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.ptest]:       { label: 'Τεστ εξάσκησης', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'firstWrong', loop: false }, // stricter than Genie: 20/20 or out
   [MODES.marathon]:    { label: 'Μαραθώνιος', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
   [MODES.hardest]:     { label: 'Οι πιο δύσκολες', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
   [MODES.numbers]:     { label: 'Αριθμοί & όρια', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.hardexam]:    { label: 'Σκληρή προσομοίωση', timerMs: RULES.HARD_EXAM_TIME_MS, perQuestionMs: null, shuffle: true, feedback: 'end', endRule: 'queue', loop: false, maxWrong: RULES.HARD_EXAM_MAX_WRONG, examWording: true, skip: true },
+  [MODES.hardexam]:    { label: 'Σκληρή προσομοίωση', timerMs: RULES.HARD_EXAM_TIME_MS, perQuestionMs: null, shuffle: true, feedback: 'end', endRule: 'queue', loop: false, maxWrong: RULES.HARD_EXAM_MAX_WRONG, examWording: true, skip: true, stopOnFail: true },
   [MODES.twins]:       { label: 'Δίδυμες ερωτήσεις', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
   [MODES.proof]:       { label: 'Τελικός έλεγχος', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
   [MODES.morning]:     { label: 'Πρωί των εξετάσεων', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
+  [MODES.grind]:       { label: 'Επιπλέον γύρος', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
 };
 
 // The exam computer's wording of a question, index-aligned with the booklet options, or null.
@@ -79,6 +80,7 @@ export function buildQueue(mode, questions, state, settings, now, params = {}, r
     case MODES.twins: return sel.twins(pool, rnd);
     case MODES.proof: return sel.proof(pool, state, now, rnd);
     case MODES.morning: return sel.morning(pool, state, rnd);
+    case MODES.grind: return sel.grind(pool, state, now, params.count || RULES.GRIND_COUNT, rnd);
     default: throw new Error(`unknown mode ${mode}`);
   }
 }
@@ -197,7 +199,7 @@ export class Session {
     this.idx++;
     // End rules
     if (this.preset.endRule === 'firstWrong' && !ok) this._finish(now, 'wrong');
-    else if (this.preset.maxWrong !== undefined && this.wrongs.length > this.preset.maxWrong && this.preset.feedback !== 'end') this._finish(now, 'failed');
+    else if (this.preset.maxWrong !== undefined && this.wrongs.length > this.preset.maxWrong && (this.preset.feedback !== 'end' || this.preset.stopOnFail)) this._finish(now, 'failed');
     else if (this.idx >= this.queue.length && !(this.preset.loop && this.preset.endRule === 'firstWrong')) this._finish(now, 'done');
     else this._prepare(now);
     return result;

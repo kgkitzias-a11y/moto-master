@@ -227,3 +227,25 @@ details summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .speed-table td { white-space: nowrap; }
 .speed-table td a { font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
 .tips { margin: 4px 0; padding-left: 20px; } .tips li { margin: 6px 0; }
+.final-stretch .grind { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line2); }
+.final-stretch .grind.grind-hot { border-top-color: var(--ok); }
+.chance-line { margin-top: 8px; font-size: 15px; } .chance-line b { font-variant-numeric: tabular-nums; }
+
+/* ---------- v1.7: Genie-style program, progress dots ---------- */
+.program { border-left: 5px solid var(--info); }
+.program .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.stages { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.stages li { padding: 10px 12px; background: var(--card2); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; gap: 8px; }
+.stages li.done { border-color: var(--ok); } .stages li.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.stages li > .btn { align-self: flex-start; }
+.stage-head { display: flex; gap: 10px; align-items: flex-start; }
+.stage-n { flex: 0 0 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; background: var(--bg2); border: 1px solid var(--line2); }
+.stages li.done .stage-n { background: var(--ok); color: #04210f; border-color: var(--ok); }
+.stages li.current .stage-n { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.stages .ptests { margin: 0; }
+.tag.ready-tag { color: var(--ok); border-color: var(--ok); font-weight: 800; }
+.qdots { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 4px; }
+.qdots i { width: 10px; height: 10px; border-radius: 50%; background: var(--line2); }
+.qdots i.ok { background: var(--ok); } .qdots i.bad { background: var(--bad); } .qdots i.done { background: var(--info); }
+.qdots i.cur { background: transparent; box-shadow: 0 0 0 2px var(--accent) inset; }
+.session-rule { margin: 2px 0 6px; }

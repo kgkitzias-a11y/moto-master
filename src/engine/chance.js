@@ -16,15 +16,22 @@ function realAnswers(s) {
   return s && s.history ? s.history.filter((h) => h.m !== 'recall') : [];
 }
 
-// Streak of correct answers at the end; +1 when the streak spans ≥2 days (spacing),
+// Correct answers in a row only count when they are at least an hour apart: answering the same
+// question five times in five minutes is short-term memory, not learning.
+export const STREAK_GAP_MS = 60 * 60 * 1000;
+
+// Streak of spaced correct answers at the end; +1 when the streak spans ≥2 days (spacing),
 // −1 when the question was last seen more than 3 days ago (forgetting).
 export function questionChance(s, now) {
   const hist = realAnswers(s);
   if (!hist.length) return P_UNSEEN;
-  let k = 0;
-  for (let i = hist.length - 1; i >= 0 && hist[i].ok; i--) k++;
-  if (k === 0) return P_LAST_WRONG;
-  const days = new Set(hist.slice(-k).map((h) => dayKey(h.t))).size;
+  let first = hist.length;
+  while (first > 0 && hist[first - 1].ok) first--;
+  const streak = hist.slice(first);
+  if (!streak.length) return P_LAST_WRONG;
+  let k = 0, counted = -Infinity;
+  for (const h of streak) if (h.t - counted >= STREAK_GAP_MS) { k++; counted = h.t; }
+  const days = new Set(streak.map((h) => dayKey(h.t))).size;
   let eff = k + (days >= 2 ? 1 : 0);
   if (now - hist[hist.length - 1].t > 3 * DAY) eff -= 1;
   return 1 - BASE_MISS * Math.pow(MISS_FACTOR, Math.max(0, eff));

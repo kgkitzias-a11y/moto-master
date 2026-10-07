@@ -46,5 +46,10 @@
  "skip": "Παράλειψη",
  "cards_screen": "Κάρτες",
  "exam_wording": "Διατύπωση εξετάσεων",
- "exam_group": "Ομάδα εξετάσεων"
+ "exam_group": "Ομάδα εξετάσεων",
+ "program": "Πρόγραμμα",
+ "next_stage": "Επόμενο",
+ "grind_mode": "Επιπλέον γύρος",
+ "mistakes_to_clear": "Λάθη για καθάρισμα",
+ "retry_test": "Ξανά από την αρχή"
 }

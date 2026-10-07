@@ -486,7 +486,7 @@ describe('Session engine: Genie-style modes', () => {
       assert.equal(new Set(s.queue).size, 10);
     });
 
-    test('summary().passed is true only with 0 wrong and all 10 answered; 1 wrong -> false (the session still runs to the end)', () => {
+    test('summary().passed is true only with 0 wrong and all 10 answered; the first wrong ends it (failing is certain)', () => {
       const ok = mk(1);
       const r0 = play(ok, 0);
       assert.equal(r0.answered, 10);
@@ -495,8 +495,8 @@ describe('Session engine: Genie-style modes', () => {
       assert.equal(ok.summary().completed, true);
       const bad = mk(2);
       const r1 = play(bad, 1);
-      assert.equal(r1.answered, 10, 'no early failure: feedback is deferred to the end');
-      assert.equal(bad.endReason, 'done');
+      assert.equal(r1.answered, 1, 'stops at the first mistake, like Genie stops once failing is certain');
+      assert.equal(bad.endReason, 'failed');
       assert.equal(bad.summary().wrong, 1);
       assert.equal(bad.summary().passed, false);
       // partial: 9 correct then abort -> not passed
@@ -540,7 +540,7 @@ describe('Session engine: Genie-style modes', () => {
       const r = play(f, 1);
       const fev = f.sessionEvent(r.t);
       assert.equal(fev.n, 10);
-      assert.equal(fev.c, 9);
+      assert.equal(fev.c, 0);
       assert.equal(fev.x.passed, false);
       assert.equal(fev.x.timed, true);
     });
@@ -554,7 +554,7 @@ describe('Session engine: Genie-style modes', () => {
     test('preset: untimed, immediate feedback; the queue is the fixed set', () => {
       assert.equal(PRESETS[MODES.ptest].timerMs, null);
       assert.equal(PRESETS[MODES.ptest].feedback, 'immediate');
-      assert.equal(PRESETS[MODES.ptest].endRule, 'queue');
+      assert.equal(PRESETS[MODES.ptest].endRule, 'firstWrong');
       assert.equal(sets.length, 2);
       const s = mk(1);
       assert.equal(s.total, sets[1].length);
@@ -564,7 +564,7 @@ describe('Session engine: Genie-style modes', () => {
       assert.deepEqual([...d.queue].sort((a, b) => a - b), [...sets[0]].sort((a, b) => a - b));
     });
 
-    test('passed only at 100 %: 20/20 -> true, 19/20 -> false, abort -> false', () => {
+    test('passed only at 100 %: 20/20 -> true, the first mistake ends the test, abort -> false', () => {
       const full = mk(0, 1);
       const r = play(full, 0);
       assert.equal(r.answered, 20);
@@ -572,9 +572,17 @@ describe('Session engine: Genie-style modes', () => {
       assert.equal(full.summary().correct, 20);
       const almost = mk(0, 2);
       const r2 = play(almost, 1);
-      assert.equal(r2.answered, 20);
-      assert.equal(almost.summary().correct, 19);
+      assert.equal(r2.answered, 1);
+      assert.equal(almost.endReason, 'wrong');
+      assert.equal(almost.summary().correct, 0);
       assert.equal(almost.summary().passed, false);
+      const late = mk(0, 6);
+      let tl = T0;
+      for (let i = 0; i < 12; i++) late.answer(correctOf(late), { now: (tl += 1000) });
+      late.answer(wrongOf(late), { now: (tl += 1000) });
+      assert.equal(late.ended, true);
+      assert.equal(late.summary().correct, 12);
+      assert.equal(late.summary().passed, false);
       const ab = mk(0, 3);
       let t = T0;
       for (let i = 0; i < 5; i++) ab.answer(correctOf(ab), { now: (t += 1000) });
@@ -584,7 +592,9 @@ describe('Session engine: Genie-style modes', () => {
 
     test('sessionEvent(): x.set === params.set (-1 for archive), x.score === correct, n === set size, x.passed', () => {
       const s = mk(1, 4);
-      const { t } = play(s, 2);
+      let t = T0;
+      for (let i = 0; i < 18; i++) s.answer(correctOf(s), { now: (t += 1000) });
+      s.answer(wrongOf(s), { now: (t += 1000) });
       const ev = s.sessionEvent(t);
       assert.equal(ev.m, 'ptest');
       assert.equal(ev.x.set, 1);

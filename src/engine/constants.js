@@ -28,6 +28,7 @@ export const RULES = Object.freeze({
   HARDEST_COUNT: 20,
   PROOF_WINDOW_MS: 48 * 60 * 60 * 1000,    // «Τελικός έλεγχος»: last answer correct within 48 h
   PASS_TARGET: 0.995,                      // pass-chance target shown next to the readiness gate
+  GRIND_COUNT: 20,                         // questions per «Επιπλέον γύρος»
 });
 
 export const MODES = Object.freeze({
@@ -54,6 +55,7 @@ export const MODES = Object.freeze({
   twins: 'twins',        // look-alike questions back to back
   proof: 'proof',        // «Τελικός έλεγχος»: every question correct within the last 48 h
   morning: 'morning',    // exam-morning review: ever-missed + look-alikes + numbers
+  grind: 'grind',        // «Επιπλέον γύρος»: the questions that raise the pass chance most, after the plan is done
 });
 
 // Options that must stay in their printed (last) position when shuffling.

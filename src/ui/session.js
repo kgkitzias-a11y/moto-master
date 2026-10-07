@@ -4,6 +4,10 @@ import { modeMeta } from './modes.js';
 import { startSession } from '../engine/session.js';
 import { confusions, isMastered } from '../engine/reducer.js';
 import { sfx, haptic, confetti, praise } from './fx.js';
+import { passChance } from '../engine/chance.js';
+import { fmtChance } from './final.js';
+import { practiceSets } from '../engine/selection.js';
+import { mistakesToClear } from './program.js';
 import { RULES as R } from '../engine/constants.js';
 
 export function renderSession(ctx) {
@@ -17,7 +21,7 @@ export function renderSession(ctx) {
   let combo = 0, bestCombo = 0;
   const fxOn = { sound: ctx.progress.settings.sound !== false, haptics: ctx.progress.settings.haptics !== false };
   const masteredBefore = new Set(ctx.questions.filter((q) => isMastered(ctx.progress.state.q[q.id])).map((q) => q.id));
-  ctx._sessionFx = { combo: () => bestCombo, masteredBefore };
+  ctx._sessionFx = { combo: () => bestCombo, masteredBefore, chanceBefore: passChance(ctx.progress.state, ctx.questions, Date.now()) };
 
   const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
   window.addEventListener('hashchange', function onLeave() { stop(); window.removeEventListener('hashchange', onLeave); if (!s.ended && location.hash !== '#/session') { s.abort(); finish({ navigate: false }); } });
@@ -49,6 +53,14 @@ export function renderSession(ctx) {
       h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onClick: () => { if (confirm('Να σταματήσει το τεστ;')) { s.abort(); finish(); } } }, 'Τέλος'));
     const bar = h('div', { class: 'timerbar hidden' }, h('div'));
     const prog = s.mode === MODES.sudden ? null : h('div', { class: 'progress' }, h('div', { style: { width: `${((s.position - 1) / Math.max(1, s.total)) * 100}%` } }));
+    const dots = s.mode !== MODES.sudden && s.total <= 40 ? h('div', { class: 'qdots', 'aria-hidden': 'true' },
+      Array.from({ length: s.total }, (_, i) => {
+        const r = s.results[i];
+        const cls = r ? (examLike ? 'done' : r.ok ? 'ok' : 'bad') : i === s.results.length ? 'cur' : '';
+        return h('i', { class: cls });
+      })) : null;
+    const rule = s.mode === MODES.ptest ? 'Περνάει μόνο με 20/20 — το πρώτο λάθος τελειώνει το τεστ.'
+      : s.mode === MODES.hardexam ? 'Κανένα λάθος: το πρώτο λάθος τελειώνει την προσομοίωση.' : null;
     const img = q.image ? h('img', { class: 'qimg', src: q.image, alt: 'εικόνα ερώτησης' }) : null;
     // In exam simulations the id and category stay in the DOM (tests, screen readers) but are not shown:
     // the real exam has no numbers, so recognising a question must come from its content.
@@ -83,7 +95,7 @@ export function renderSession(ctx) {
         card.append(h('button', { class: 'btn btn-ghost btn-block skip-btn', type: 'button', id: 'skip-btn', onClick: () => { if (!locked && s.skip(Date.now())) draw(); } }, 'Παράλειψη — θα ξαναέρθει στο τέλος'));
       }
     }
-    root.append(top, prog, bar, card);
+    root.append(top, prog, bar, dots, rule ? h('p', { class: 'small muted session-rule' }, rule) : null, card);
 
     // timers
     const clock = top.querySelector('#clock');
@@ -193,7 +205,7 @@ export function renderSummary(ctx) {
   const wrongs = [...new Set(sum.wrongs)];
   let verdict = null;
   if (sum.mode === MODES.exam || sum.mode === MODES.hardexam) verdict = h('div', { class: `verdict-big ${sum.passed ? 'ok' : 'bad'}` }, sum.passed ? 'ΠΕΡΑΣΕΣ' : 'ΚΟΠΗΚΕΣ');
-  else if (sum.mode === MODES.ptest) verdict = h('div', { class: `verdict-big ${sum.passed ? 'ok' : 'bad'}` }, sum.passed ? 'ΠΕΡΑΣΕΣ 100 %' : `${sum.correct}/${sum.total}`);
+  else if (sum.mode === MODES.ptest) verdict = h('div', { class: `verdict-big ${sum.passed ? 'ok' : 'bad'}` }, sum.passed ? 'ΠΕΡΑΣΕΣ 100 %' : sum.endReason === 'wrong' ? 'ΚΟΠΗΚΕΣ' : `${sum.correct}/${sum.total}`);
   else if (sum.mode === MODES.sudden) verdict = h('div', { class: 'verdict-big' }, `${sum.run} στη σειρά`);
   const again = h('button', { class: 'btn btn-primary', type: 'button', onClick: () => { ctx.session = startSession(sum.mode, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings, params: sum.params || {} }); if (ctx.session.isEmpty) { ctx.toast('Δεν έμεινε τίποτα άλλο για αυτό το τεστ.'); return; } ctx.navigate('#/session'); } }, 'Ξανά');
   const perfect = sum.answered > 0 && sum.wrong === 0 && sum.endReason !== 'abort';
@@ -203,8 +215,26 @@ export function renderSummary(ctx) {
   const goalReached = remaining === 0;
   const continueBtn = remaining > 0 ? h('button', { class: 'btn btn-primary btn-block btn-hero', type: 'button', id: 'continue-goal', onClick: () => { const next = ctx.progress.plan(); ctx.session = startSession(MODES.goal, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings, params: next.automatic ? { plannedIds: next.queue } : { remaining: next.remaining } }); if (ctx.session.isEmpty) { ctx.toast('Δεν υπάρχουν άλλες ερωτήσεις τώρα.'); return; } ctx.navigate('#/session'); } }, `Συνέχισε (${remaining} ακόμα για τον στόχο) ▶`) : h('p', { class: 'ok', style: { textAlign: 'center', fontWeight: 700 } }, `Ημερήσιος στόχος ${goal} ✓`);
   const goalWasJustReached = goalReached && sum.mode === MODES.goal;
+  const startGrind = () => { ctx.session = startSession(MODES.grind, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings }); if (ctx.session.isEmpty) { ctx.toast('Δεν υπάρχουν ερωτήσεις τώρα.'); return; } ctx.navigate('#/session'); };
+  const grindPrimary = goalReached && !(sum.mode === MODES.ptest && !sum.passed);
+  const grindBtn = h('button', { class: `btn btn-block ${grindPrimary ? 'btn-primary btn-hero' : ''}`, type: 'button', id: 'grind-more', onClick: startGrind }, goalReached ? 'Άλλος ένας γύρος ▶' : 'Επιπλέον γύρος ▶');
   const isRecord = sum.mode === MODES.sudden && sum.run > 0 && sum.run >= ctx.progress.state.sudden.best;
-  const fx = ctx._sessionFx || { combo: () => 0, masteredBefore: new Set() };
+  const fx = ctx._sessionFx || { combo: () => 0, masteredBefore: new Set(), chanceBefore: null };
+  const toClear = mistakesToClear(ctx.progress.state, ctx.questions).length;
+  // After a passed practice test, the next one not yet passed (Genie's "next test" flow).
+  let nextTest = null;
+  const testFailed = sum.mode === MODES.ptest && !sum.passed;
+  const retryTest = testFailed ? h('button', { class: 'btn btn-primary btn-block btn-hero', type: 'button', id: 'retry-test', onClick: () => { ctx.session = startSession(MODES.ptest, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings, params: sum.params || {} }); ctx.navigate('#/session'); } }, `Ξανά το Τεστ ${sum.params && Number.isInteger(sum.params.set) ? sum.params.set + 1 : ''} από την αρχή ▶`) : null;
+  if (sum.mode === MODES.ptest && sum.passed) {
+    const { sets } = practiceSets(ctx.questions);
+    const i = sets.findIndex((_, k) => !(ctx.progress.state.ptests[k] && ctx.progress.state.ptests[k].passed));
+    if (i >= 0) nextTest = h('button', { class: 'btn btn-primary btn-block', type: 'button', id: 'next-test', onClick: () => { ctx.session = startSession(MODES.ptest, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings, params: { set: i } }); ctx.navigate('#/session'); } }, `Επόμενο: Τεστ ${i + 1} ▶`);
+  }
+  const chanceAfter = passChance(ctx.progress.state, ctx.questions, Date.now());
+  const chanceDelta = fx.chanceBefore === null ? null : chanceAfter - fx.chanceBefore;
+  const chanceLine = h('p', { class: 'chance-line', id: 'chance-line' }, 'Πιθανότητα επιτυχίας: ',
+    fx.chanceBefore !== null ? [fmtChance(fx.chanceBefore), ' → '] : null, h('b', null, fmtChance(chanceAfter)),
+    chanceDelta !== null && Math.abs(chanceDelta) >= 0.0005 ? h('span', { class: chanceDelta > 0 ? 'ok' : 'bad' }, ` (${chanceDelta > 0 ? '+' : '−'}${(Math.abs(chanceDelta) * 100).toLocaleString('el-GR', { maximumFractionDigits: 1 })})`) : null);
   const masteredNow = ctx.questions.filter((q) => isMastered(ctx.progress.state.q[q.id])).length;
   const newlyMastered = ctx.questions.filter((q) => isMastered(ctx.progress.state.q[q.id]) && !fx.masteredBefore.has(q.id)).length;
   const bestCombo = fx.combo();
@@ -228,12 +258,19 @@ export function renderSummary(ctx) {
       sum.endReason === 'abort' ? h('p', { class: 'muted' }, 'Σταμάτησες το τεστ πριν τελειώσει.') : null,
       sum.completed && sum.mode === MODES.due ? h('p', { class: 'ok' }, 'Η σημερινή εξάσκηση ολοκληρώθηκε ✓') : null,
       sum.completed && [MODES.tomorrow, MODES.wrong, MODES.marathon, MODES.proof, MODES.morning].includes(sum.mode) ? h('p', { class: 'ok' }, 'Τα καθάρισες όλα ✓') : null,
+      sum.mode === MODES.ptest && !sum.passed && sum.endReason === 'wrong' ? h('p', { class: 'bad', id: 'ptest-fail' }, `Κόπηκες στην ερώτηση ${sum.answered}/${sum.total}. Το τεστ περνάει μόνο με ${sum.total}/${sum.total} — ξεκίνα από την αρχή.`) : null,
       sum.mode === MODES.ptest && !sum.passed && sum.endReason === 'done' ? h('p', { class: 'muted small' }, 'Το τεστ περνάει μόνο με 100 %. Ξαναδοκίμασέ το μέχρι να το καθαρίσεις.') : null,
+      sum.mode === MODES.hardexam && sum.endReason === 'failed' ? h('p', { class: 'bad' }, `Σταμάτησε στο πρώτο λάθος (ερώτηση ${sum.answered}/${sum.total}).`) : null,
+      toClear ? h('p', { class: 'small warn', id: 'to-clear' }, `Λάθη για καθάρισμα: ${toClear} (θέλουν 2 σωστές στη σειρά).`) : null,
       sum.skipped ? h('p', { class: 'muted small' }, `Παραλείψεις: ${sum.skipped}`) : null,
+      chanceLine,
       deltas),
+    retryTest ? h('div', { style: { margin: '10px 0' } }, retryTest) : null,
+    nextTest ? h('div', { style: { margin: '10px 0' } }, nextTest) : null,
+    h('div', { style: { margin: '10px 0' } }, continueBtn),
+    h('div', { style: { margin: '10px 0' } }, grindBtn),
     examSheet(sum),
     wrongs.length && !sum.sheet ? h('div', { class: 'card' }, h('h3', null, 'Λάθη'), h('div', { class: 'list' }, wrongs.map((id) => { const q = byId.get(id); return h('a', { class: 'qrow', href: `#/q/${id}` }, h('span', { class: 'id' }, `#${id}`), h('span', { class: 'txt' }, q ? q.text : '')); }))) : null,
-    h('div', { style: { margin: '10px 0' } }, continueBtn),
     h('div', { class: 'btn-row' }, h('a', { class: 'btn', href: '#/' }, 'Αρχική'), again),
   ]);
   return wrap;

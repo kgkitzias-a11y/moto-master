@@ -107,6 +107,18 @@ const drivers = {
     expect(s.answered).toBe(3);
   },
 
+  async grind(page) {
+    await clickMode(page, 'grind');
+    await expect(page).toHaveURL(/#\/session$/);
+    await expect(page.locator('.session-top')).toContainText('Επιπλέον γύρος · 1/20');
+    const r = await drive(page, { max: 3 });
+    expect(r.answered).toBe(3);
+    const s = await expectSummary(page, 'grind');
+    expect(s.answered).toBe(3);
+    await expect(page.locator('#chance-line')).toContainText('Πιθανότητα επιτυχίας');
+    await expect(page.locator('#grind-more')).toBeVisible();
+  },
+
   async trap(page) {
     await clickMode(page, 'trap');
     await expect(page).toHaveURL(/#\/session$/);
@@ -259,14 +271,12 @@ const drivers = {
     await expect(page.locator('.session-top')).toContainText('Σκληρή προσομοίωση · ερώτηση 1/10');
     await expect(page.locator('#clock')).toHaveText(/^[45]:\d\d$/); // 5-minute session timer visible
     await expect(page.locator('.timerbar')).not.toHaveClass(/hidden/);
-    // Run 1: the very first answer is wrong → zero tolerance → ΚΟΠΗΚΕΣ, but only at the end (no feedback in between).
-    for (let i = 0; i < 10; i++) {
-      await expect(page.locator('.session-top')).toContainText(`${i + 1}/10`);
-      await answerKnown(page, byId, i !== 0, { feedback: false });
-      await expect(page.locator('.feedback')).toHaveCount(0);
-    }
+    // Run 1: the very first answer is wrong → zero tolerance → failing is certain → it stops at once.
+    await expect(page.locator('.session-rule')).toContainText('το πρώτο λάθος τελειώνει');
+    await answerKnown(page, byId, false, { feedback: false });
     let s = await expectSummary(page, 'hardexam');
-    expect(s).toEqual({ correct: 9, answered: 10 });
+    expect(s).toEqual({ correct: 0, answered: 1 });
+    await expect(page.locator('#view')).toContainText('Σταμάτησε στο πρώτο λάθος');
     await expect(page.locator('.verdict-big')).toHaveText('ΚΟΠΗΚΕΣ');
     await expect(page.locator('#view')).toContainText('1 λάθος');
     // Run 2: all ten right → ΠΕΡΑΣΕΣ.

@@ -9,6 +9,14 @@ test('final stretch follows the exam date: daily steps, the eve and the exam day
   await gotoHome(page);
   const card = page.locator('#final-stretch');
   await expect(card).toBeVisible();
+  // Top of the screen: final stretch first, then the Genie-style program, then the daily plan.
+  const order = await page.locator('#view > div > *').evaluateAll((els) => els.slice(0, 3).map((e) => e.id || e.className));
+  expect(order[0]).toBe('final-stretch');
+  expect(order[1]).toBe('program');
+  expect(order[2]).toContain('hero');
+  await expect(card.locator('#grind-btn')).toHaveText('Επιπλέον γύρος ▶');
+  await expect(page.locator('#program-next')).toHaveText('Επόμενο: Τεστ 1 ▶');
+  await expect(page.locator('#program [data-stage]')).toHaveCount(6);
   await expect(card.locator('#pass-chance .v')).toHaveText(/%$/);
   await expect(card.locator('#proof-count .v')).toHaveText('0/140');
   await expect(card.locator('[data-step]')).toHaveCount(3);

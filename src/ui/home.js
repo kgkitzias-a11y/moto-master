@@ -1,6 +1,6 @@
 import { h } from './dom.js';
 import { SECTIONS, previewCount } from './modes.js';
-import { practiceSets } from '../engine/selection.js';
+import { programCard } from './program.js';
 import { readiness, dueStreak, dueList, inBin, isSolid } from '../engine/reducer.js';
 import { RULES, MODES } from '../engine/constants.js';
 import { startSession } from '../engine/session.js';
@@ -72,7 +72,7 @@ export function readinessCard(ctx) {
 
 function recommend(ctx, due, bin, weakCount, remainingToGoal, todayDone) {
   // Single best next action (removes the choice cost that kills habits).
-  if (remainingToGoal === 0) return { mode: bin ? MODES.wrong : MODES.exam, params: {}, title: 'Ο σημερινός στόχος ολοκληρώθηκε', sub: bin ? 'Συνέχισε με τα λάθη σου.' : 'Συνέχισε με μια προσομοίωση εξετάσεων.', label: 'Ξεκίνα τώρα ▶' };
+  if (remainingToGoal === 0) return { mode: MODES.grind, params: {}, title: 'Ο σημερινός στόχος ολοκληρώθηκε', sub: 'Θέλεις κι άλλο; Ο επιπλέον γύρος διαλέγει τις ερωτήσεις που ανεβάζουν περισσότερο την πιθανότητα επιτυχίας.', label: 'Επιπλέον γύρος ▶' };
   if (remainingToGoal > 0 && (todayDone || due === 0)) return { mode: MODES.goal, params: { remaining: remainingToGoal }, title: 'Συνέχισε προς τον στόχο', sub: `${remainingToGoal} ερωτήσεις ακόμα για το σημερινό ${ctx.progress.settings.dailyGoal || 40}.`, label: `Συνέχισε (${remainingToGoal} ακόμα) ▶` };
   if (due > 0 && due <= Math.max(remainingToGoal, 5)) return { mode: MODES.due, params: {}, title: 'Η σημερινή εξάσκηση', sub: `Σε περιμένουν ${due} ερωτήσεις — ${bin ? bin + ' από τα λάθη σου, ' : ''}ένας γύρος και τελείωσες.`, label: 'Ξεκίνα τώρα ▶' };
   if (due > 0) return { mode: MODES.goal, params: { remaining: remainingToGoal }, title: 'Η σημερινή εξάσκηση', sub: `${due} ερωτήσεις είναι για επανάληψη — ${bin ? bin + ' από τα λάθη σου. ' : ''}Παίρνεις τις ${remainingToGoal} επόμενες προς τον στόχο.`, label: remainingToGoal < (ctx.progress.settings.dailyGoal || 40) ? `Συνέχισε (${remainingToGoal} ακόμα) ▶` : 'Ξεκίνα τώρα ▶' };
@@ -104,9 +104,9 @@ export function renderHome(ctx) {
       sub: `${plan.newRemaining} νέες + ${plan.reviewTarget - plan.reviewDone} για επανάληψη απομένουν.`,
       label: `Συνέχισε (${remainingToGoal} ακόμα) ▶` }
     : plan.automatic
-      ? { mode: bin ? MODES.wrong : MODES.exam, params: {}, title: 'Ο σημερινός στόχος ολοκληρώθηκε',
-        sub: bin ? `${bin} ερωτήσεις παραμένουν στα λάθη σου. Κάνε έναν επιπλέον γύρο.` : 'Συνέχισε με μια προσομοίωση για να ελέγξεις την ετοιμότητά σου.',
-        label: bin ? 'Επανάληψη λαθών ▶' : 'Προσομοίωση εξετάσεων ▶' }
+      ? { mode: MODES.grind, params: {}, title: 'Ο σημερινός στόχος ολοκληρώθηκε',
+        sub: `Θέλεις κι άλλο; Ο επιπλέον γύρος διαλέγει τις ${RULES.GRIND_COUNT} ερωτήσεις που ανεβάζουν περισσότερο την πιθανότητα επιτυχίας${bin ? ` (μαζί με τα ${bin} λάθη σου)` : ''}.`,
+        label: 'Επιπλέον γύρος ▶' }
       : recommend(ctx, due, bin, weakCount, remainingToGoal, todayDone);
   const start = (mode, params = {}) => { ctx.session = startSession(mode, { questions: ctx.questions, state: st, settings: s, params }); if (ctx.session.isEmpty) { ctx.toast('Δεν υπάρχουν ερωτήσεις για αυτό το τεστ τώρα.'); return; } ctx.navigate('#/session'); };
 
@@ -144,29 +144,17 @@ export function renderHome(ctx) {
       h('span', { class: 't' }, m.title), h('span', { class: 'd' }, m.desc), h('span', { class: 'n' }, countLabel(m.id, n)));
   };
 
-  // Numbered practice tests (fixed sets, same on every device); pass = 100 %.
-  const { sets, archive } = practiceSets(ctx.questions);
-  const ptCard = (idx, ids, label) => {
-    const p = st.ptests[idx === 'archive' ? -1 : idx];
-    const passed = !!(p && p.passed);
-    const best = p ? `${p.best}/${ids.length}` : '—';
-    return h('button', { class: `ptest ${passed ? 'passed' : ''}`, type: 'button', dataset: { set: idx }, onClick: () => start(MODES.ptest, { set: idx }) },
-      h('span', { class: 't' }, label), h('span', { class: 'b' }, passed ? '✓ 100 %' : `καλύτερο ${best}`), h('span', { class: 'c' }, `${ids.length} ερ.`));
-  };
-  const ptests = h('div', { class: 'ptests' }, sets.map((ids, i) => ptCard(i, ids, `Τεστ ${i + 1}`)), s.includeArchive && archive.length ? ptCard('archive', archive, 'Εκτός ύλης') : null);
-  const passedCount = sets.filter((_, i) => st.ptests[i] && st.ptests[i].passed).length;
-
   const sections = SECTIONS.map((sec) => h('div', null, h('h2', null, sec.title), h('div', { class: 'modes' }, sec.modes.map(modeCard))));
 
+  // Top of the screen: today's steps (Τελική ευθεία), then the Genie-style ordered path (Πρόγραμμα)
+  // with the numbered practice tests, then the daily plan.
   return h('div', null,
-    hero,
     finalStretchCard(ctx, start),
+    programCard(ctx, start),
+    hero,
     planControls(ctx),
     progressCard(ctx),
     readinessCard(ctx),
-    h('div', { class: 'row between', style: { marginTop: '18px' } }, h('h2', { style: { margin: 0 } }, 'Τεστ εξάσκησης'), h('span', { class: 'small muted' }, `${passedCount}/${sets.length} με 100 %`)),
-    h('p', { class: 'small muted' }, `Όλο το βιβλίο σε ${sets.length} σταθερά τεστ των ${RULES.PTEST_SIZE}. Ένα τεστ «περνάει» μόνο αν απαντήσεις σωστά σε όλες τις ερωτήσεις του (100 %).`),
-    ptests,
     sections,
     h('p', { class: 'small muted', style: { marginTop: '14px' } }, h('a', { href: '#/cards', id: 'cards-link' }, '🗂 Κάρτες'), ' — όρια ταχύτητας, δίδυμες ερωτήσεις, τι ισχύει στις εξετάσεις.'),
     h('p', { class: 'small muted' }, h('a', { href: '#/sheet' }, '📄 Σκονάκι'), ' — όλες οι ερωτήσεις με τη σωστή απάντηση, ανά κατηγορία.'),

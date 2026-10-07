@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { reduce, emptyState } from '../../src/engine/reducer.js';
-import { examByGroups, twins, twinSets, proof, morning } from '../../src/engine/selection.js';
+import { examByGroups, twins, twinSets, proof, morning, grind } from '../../src/engine/selection.js';
 import { questionChance, atMostWrong, passChance, isProven, proofStatus, groupChances, P_UNSEEN, P_LAST_WRONG } from '../../src/engine/chance.js';
 import { startSession, PRESETS } from '../../src/engine/session.js';
 import { MODES, RULES } from '../../src/engine/constants.js';
@@ -230,6 +230,34 @@ describe('v1.6 exam sessions', () => {
     assert.equal(mk(MODES.proof).total, BOOKLET.length);
     assert.ok(mk(MODES.morning).total > 10);
     assert.equal(PRESETS[MODES.proof].endRule, 'zeroed');
+  });
+});
+
+describe('v1.7 keep grinding', () => {
+  test('correct answers in a row count only when at least an hour apart', () => {
+    const now = T0 + D;
+    const one = reduce([ev(6, T0, true)], QS).q[6];
+    const crammed = reduce([ev(6, T0, true), ev(6, T0 + 60000, true), ev(6, T0 + 120000, true)], QS).q[6];
+    const spaced = reduce([ev(6, T0, true), ev(6, T0 + H, true), ev(6, T0 + 2 * H, true)], QS).q[6];
+    assert.equal(questionChance(crammed, now), questionChance(one, now));
+    assert.ok(questionChance(spaced, now) > questionChance(crammed, now));
+  });
+
+  test('grind: weakest questions first (per group size), questions just answered right wait', () => {
+    const now = T0 + 3 * D;
+    const events = [];
+    for (const q of BOOKLET) for (const t of [T0, T0 + D, T0 + 2 * D]) events.push(ev(q.id, t, true));
+    events.push(ev(12, now - 10 * 60000, false));          // just missed → top priority
+    events.push(ev(13, now - 10 * 60000, true));            // just answered right → waits
+    const st = reduce(events, QS);
+    const ids = grind(BOOKLET, st, now, 20, mulberry32(4));
+    assert.equal(ids.length, 20);
+    assert.ok(ids.includes(12));
+    assert.ok(!ids.includes(13));
+    assert.ok(ids.every((id) => byId.get(id).tier === 'booklet'));
+    const s = startSession(MODES.grind, { questions: QS, state: st, settings: {}, now, rnd: mulberry32(1) });
+    assert.equal(s.total, RULES.GRIND_COUNT);
+    assert.equal(PRESETS[MODES.grind].endRule, 'zeroed');
   });
 });
 

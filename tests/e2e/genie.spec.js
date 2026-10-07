@@ -8,7 +8,7 @@ import {
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 test.describe('genie', () => {
-  test('practice tests: 7 fixed sets of 20; a set is played to the end, its best score and the 100 % pass show on the card', async ({ page }) => {
+  test('practice tests: 7 fixed sets of 20; the first mistake ends the test (stricter than Genie), 20/20 passes and offers the next test', async ({ page }) => {
     acceptDialogs(page);
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -27,29 +27,31 @@ test.describe('genie', () => {
     await expect(page.locator('#view')).toContainText('0/7 με 100 %');
     await expect(page.locator('.ptest[data-set="archive"]')).toHaveCount(0); // archive test only with the setting on
 
-    // Run 1: first answer wrong, the rest right → 19/20, not passed, hint shown.
+    // Run 1: right, right, then wrong → the test ends at once: ΚΟΠΗΚΕΣ, restart offered.
     await page.locator('.ptest[data-set="0"]').click();
     await expect(page).toHaveURL(/#\/session$/);
     await expect(page.locator('.session-top')).toContainText('Τεστ εξάσκησης · 1/20');
+    await expect(page.locator('.qdots i')).toHaveCount(20);
+    await expect(page.locator('.session-rule')).toContainText('το πρώτο λάθος τελειώνει το τεστ');
     const seen = [];
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 3; i++) {
       await expect(page.locator('.session-top')).toContainText(`${i + 1}/20`);
       seen.push(await page.locator('.qid span').first().innerText());
-      const v = await answerKnown(page, byId, i !== 0);
-      expect(v).toMatch(i === 0 ? /^Λάθος/ : /^Σωστό/);
-      expect(await clickNext(page)).toBe(i === 19);
+      const v = await answerKnown(page, byId, i !== 2);
+      expect(v).toMatch(i === 2 ? /^Λάθος/ : /^Σωστό/);
+      expect(await clickNext(page)).toBe(i === 2);
     }
-    expect(new Set(seen).size).toBe(20);
     await expect(page.locator('#view h1')).toHaveText('Τεστ εξάσκησης');
-    expect(await summaryScore(page)).toEqual({ correct: 19, answered: 20 });
-    await expect(page.locator('.verdict-big')).toHaveText('19/20');
+    expect(await summaryScore(page)).toEqual({ correct: 2, answered: 3 });
+    await expect(page.locator('.verdict-big')).toHaveText('ΚΟΠΗΚΕΣ');
     await expect(page.locator('.verdict-big')).toHaveClass(/bad/);
-    await expect(page.locator('#view')).toContainText('Το τεστ περνάει μόνο με 100 %');
-    await expect(page.locator('#continue-goal')).toBeVisible(); // 20 < the default goal of 40
+    await expect(page.locator('#ptest-fail')).toContainText('Κόπηκες στην ερώτηση 3/20');
+    await expect(page.locator('#retry-test')).toHaveText('Ξανά το Τεστ 1 από την αρχή ▶');
+    await expect(page.locator('#continue-goal')).toBeVisible(); // 3 < the default goal of 40
 
     await gotoHome(page);
     const c0 = page.locator('.ptest[data-set="0"]');
-    await expect(c0.locator('.b')).toHaveText('καλύτερο 19/20');
+    await expect(c0.locator('.b')).toHaveText('καλύτερο 2/20');
     await expect(c0).not.toHaveClass(/passed/);
     await expect(page.locator('.ptest[data-set="1"] .b')).toHaveText('καλύτερο —');
     await expect(page.locator('#view')).toContainText('0/7 με 100 %');
@@ -64,22 +66,22 @@ test.describe('genie', () => {
       expect(await answerKnown(page, byId, true)).toMatch(/^Σωστό/);
       expect(await clickNext(page)).toBe(i === 19);
     }
-    expect([...seen2].sort()).toEqual([...seen].sort()); // the set is fixed
+    expect(new Set(seen2).size).toBe(20);
+    for (const id of seen) expect(seen2).toContain(id); // the set is fixed
     expect(await summaryScore(page)).toEqual({ correct: 20, answered: 20 });
     await expect(page.locator('.verdict-big')).toHaveText('ΠΕΡΑΣΕΣ 100 %');
     await expect(page.locator('.verdict-big')).toHaveClass(/ok/);
-    await expect(page.locator('#view')).not.toContainText('Το τεστ περνάει μόνο με 100 %');
-    await expect(page.locator('#view')).toContainText('Ημερήσιος στόχος 40 ✓'); // 40 answers today
+    await expect(page.locator('#ptest-fail')).toHaveCount(0);
+    await expect(page.locator('#next-test')).toHaveText('Επόμενο: Τεστ 2 ▶');
 
     await gotoHome(page);
     await expect(c0).toHaveClass(/passed/);
     await expect(c0.locator('.b')).toHaveText('✓ 100 %');
     await expect(page.locator('#view')).toContainText('1/7 με 100 %');
-    // A later worse run must not un-pass the set: answer one wrong and stop.
+    // A later worse run must not un-pass the set: one wrong ends it.
     await c0.click();
     expect(await answerKnown(page, byId, false)).toMatch(/^Λάθος/);
-    await page.getByRole('button', { name: 'Τέλος', exact: true }).click();
-    await page.waitForURL(/#\/summary$/);
+    expect(await clickNext(page)).toBe(true);
     await gotoHome(page);
     await expect(c0).toHaveClass(/passed/);
     await expect(c0.locator('.b')).toHaveText('✓ 100 %');

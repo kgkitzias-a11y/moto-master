@@ -49,9 +49,10 @@ export function finalStretchCard(ctx, start) {
     ];
   }
   const next = steps.find((s) => !s.done && s.run);
+  const allDone = !next;
   const ok = chance >= RULES.PASS_TARGET;
   return h('section', { class: 'card final-stretch', id: 'final-stretch', 'aria-label': 'Τελική ευθεία' },
-    h('div', { class: 'row between' }, h('div', null, h('div', { class: 'eyebrow' }, phase), h('h3', { style: { margin: '2px 0 0' } }, 'Τελική ευθεία')),
+    h('div', { class: 'row between' }, h('div', { style: { flex: 1, minWidth: 0 } }, h('div', { class: 'eyebrow' }, phase), h('h3', { style: { margin: '2px 0 0' } }, 'Τελική ευθεία')),
       h('a', { class: 'btn btn-sm', href: '#/certification' }, 'Ετοιμότητα')),
     h('div', { class: 'kpis', style: { marginTop: '10px' } },
       h('div', { class: `kpi ${ok ? 'good' : ''}`, id: 'pass-chance', title: 'Εκτίμηση από τις πρόσφατες απαντήσεις σου σε κάθε ερώτηση' },
@@ -62,5 +63,10 @@ export function finalStretchCard(ctx, start) {
       h('div', { class: 'step-main' }, h('b', null, `${s.done ? '✓ ' : ''}${s.label}`), h('div', { class: 'small muted' }, s.detail)),
       s.href ? h('a', { class: 'btn btn-sm', href: s.href }, 'Άνοιξε')
         : h('button', { class: `btn btn-sm ${s === next ? 'btn-primary' : ''}`, type: 'button', onClick: s.run }, s.done ? 'Ξανά' : 'Ξεκίνα')))),
+    // Keep grinding: always one tap away, the main action once today's steps are done.
+    h('div', { class: `grind ${allDone ? 'grind-hot' : ''}` },
+      allDone ? h('p', { class: 'small ok', style: { margin: '0 0 6px' } }, 'Τα σημερινά βήματα ολοκληρώθηκαν. Θέλεις κι άλλο;') : null,
+      h('button', { class: `btn btn-block ${allDone ? 'btn-primary btn-hero' : ''}`, type: 'button', id: 'grind-btn', onClick: () => start(MODES.grind) }, 'Επιπλέον γύρος ▶'),
+      h('p', { class: 'small muted', style: { margin: '6px 0 0', textAlign: 'center' } }, `Οι ${RULES.GRIND_COUNT} ερωτήσεις που ανεβάζουν περισσότερο την πιθανότητα· όσες φορές θέλεις.`)),
   );
 }
