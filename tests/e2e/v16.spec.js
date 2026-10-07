@@ -24,6 +24,11 @@ test('final stretch follows the exam date: daily steps, the eve and the exam day
 
   await page.getByLabel('Ημερομηνία εξετάσεων', { exact: true }).fill('2026-10-08');
   await expect(card).toContainText('Αύριο εξετάσεις — παραμονή');
+  await expect(page.getByLabel('Ώρα εξετάσεων', { exact: true })).toHaveValue('09:00');
+  await expect(card.locator('#pass-chance .l')).toContainText('09:00');
+  await page.getByLabel('Ώρα εξετάσεων', { exact: true }).fill('13:30');
+  await expect(card.locator('#pass-chance .l')).toContainText('13:30');
+  await expect(page.locator('#exam-when')).toContainText('13:30');
   await expect(card.locator('[data-step="proof"]')).toContainText('0/140');
   await expect(card.locator('[data-step="exams"]')).toContainText('0/3');
 

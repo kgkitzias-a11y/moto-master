@@ -14,12 +14,14 @@ test('paired devices share the study plan, pull on reconnection, and preserve pr
   try {
     await gotoHash(A, '#/settings');
     await examDate(A).fill('2030-06-01');
+    await A.getByLabel('Ώρα εξετάσεων', { exact: true }).fill('13:30');
     await A.getByRole('checkbox', { name: 'Προσωρινή ημερομηνία' }).check();
     await archive(A).check();
     await A.getByRole('combobox').selectOption('light');
     await saveToken(A, 'ghp_TESTONLY');
     await saveToken(B, 'ghp_TESTONLY');
     await expect(examDate(B)).toHaveValue('2030-06-01');
+    await expect(B.getByLabel('Ώρα εξετάσεων', { exact: true })).toHaveValue('13:30');
     await expect(archive(B)).toBeChecked();
     await expect(B.getByRole('checkbox', { name: 'Προσωρινή ημερομηνία' })).toBeChecked();
     await expect(B.getByRole('combobox')).toHaveValue('dark');
@@ -57,5 +59,6 @@ test('paired devices share the study plan, pull on reconnection, and preserve pr
     const cloud = [...gh.gists.values()][0].files['moto-master-settings.json'].content;
     expect(cloud).not.toMatch(/token|deviceId|theme|gistId/);
     expect(JSON.parse(cloud).settings.examDate.value).toBe('2030-06-03');
+    expect(JSON.parse(cloud).settings.examTime.value).toBe('13:30');
   } finally { await ctxA.close(); await ctxB.close(); }
 });

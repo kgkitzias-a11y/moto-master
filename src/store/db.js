@@ -103,6 +103,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   deviceId: null,
   seenVersion: null,
   examDate: null,        // 'YYYY-MM-DD' → automatic daily study plan
+  examTime: '09:00',     // 'HH:MM' → the moment the pass chance is computed for
   examTentative: false,
   dailyGoal: 40,         // answers per day (goal-gradient bar)
   sound: true,           // feedback ticks

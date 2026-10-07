@@ -2,11 +2,13 @@
 // never enter the cloud document. Explicit edits merge per field by (time, UUID).
 import { calendarDay } from '../engine/planner.js';
 
-export const SHARED_KEYS = ['examDate', 'examTentative', 'includeArchive', 'dailyGoal', 'hardMode'];
+export const SHARED_KEYS = ['examDate', 'examTime', 'examTentative', 'includeArchive', 'dailyGoal', 'hardMode'];
+export const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/; // 'HH:MM', 24 h
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function validPreference(key, value) {
   if (key === 'examDate') return value === null || calendarDay(value) !== null;
+  if (key === 'examTime') return typeof value === 'string' && TIME_RE.test(value);
   if (key === 'dailyGoal') return Number.isInteger(value) && value >= 10 && value <= 400;
   return ['examTentative', 'includeArchive', 'hardMode'].includes(key) && typeof value === 'boolean';
 }

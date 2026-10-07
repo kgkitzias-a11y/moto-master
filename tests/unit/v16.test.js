@@ -178,6 +178,12 @@ describe('v1.8 pass chance: strict memory model', () => {
     assert.equal(examMoment({ examDate: '2026-10-12' }, examDayNoon), examDayNoon);
     assert.equal(examMoment({}, now), now + D);
     assert.equal(examMoment({ examDate: '2026-10-01' }, now), now + D);
+    assert.equal(examMoment({ examDate: '2026-10-12', examTime: '13:30' }, now), new Date(2026, 9, 12, 13, 30).getTime());
+    assert.equal(examMoment({ examDate: '2026-10-12', examTime: '7:5' }, now), new Date(2026, 9, 12, 9, 0).getTime(), 'invalid time → 09:00');
+    const s = reduce([ev(5, now - D, true), ev(5, now, true)], QS).q[5];
+    const early = questionChance(s, examMoment({ examDate: '2026-10-12', examTime: '08:00' }, now), byId.get(5));
+    const late = questionChance(s, examMoment({ examDate: '2026-10-12', examTime: '14:00' }, now), byId.get(5));
+    assert.ok(late < early, 'a later exam hour means more forgetting');
   });
 
   test('ready needs ≥ 99,5 % AND no question below 97 %: daily reviews alone fall short, a final morning review gets there', () => {

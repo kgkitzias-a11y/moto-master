@@ -34,6 +34,17 @@ test('only valid study fields sync; tokens, appearance, malformed dates and futu
   assert.deepEqual(sanitizePreferences({ examDate: record(null) }, t), { examDate: record(null) });
 });
 
+test('exam time syncs as a validated HH:MM study field; the default never overrides a cloud time', () => {
+  assert.deepEqual(sanitizePreferences({ examTime: record('13:30') }, t), { examTime: record('13:30') });
+  for (const bad of ['25:00', '9:00', '09:60', '', null, 930, '09:00:00']) {
+    assert.deepEqual(sanitizePreferences({ examTime: record(bad) }, t), {}, String(bad));
+  }
+  const fresh = initialPreferences({ examTime: '09:00' });
+  assert.deepEqual(fresh.examTime, { value: '09:00', t: 0, id: '' });
+  assert.equal(mergePreferences(fresh, { examTime: record('13:30') }).examTime.value, '13:30');
+  assert.equal(mergePreferences({ examTime: record('08:30', t + 1) }, { examTime: record('13:30') }).examTime.value, '08:30');
+});
+
 test('existing settings migrate without changing values or explicit edit timestamps', () => {
   const previous = record('2026-10-09');
   const p = initialPreferences({ examDate: '2026-10-09', dailyGoal: 50, sharedPreferences: { examDate: previous }, theme: 'light', gistId: 'id', token: 'secret' });

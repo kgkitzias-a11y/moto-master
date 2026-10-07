@@ -249,3 +249,6 @@ details summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .qdots i.ok { background: var(--ok); } .qdots i.bad { background: var(--bad); } .qdots i.done { background: var(--info); }
 .qdots i.cur { background: transparent; box-shadow: 0 0 0 2px var(--accent) inset; }
 .session-rule { margin: 2px 0 6px; }
+
+/* ---------- v1.9: exam time next to the date ---------- */
+.plan-when { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 8px; align-items: end; }

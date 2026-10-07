@@ -29,7 +29,7 @@ export const MODEL = Object.freeze({
   LEECH: 0.1,             // trust lost per past miss
   SLIP: 0.005,            // misread / mis-tapped although known
   TWIN_SLIP: 0.02,        // look-alike questions: confusion with the twin
-  EXAM_HOUR: 9,           // the exam is assumed to start at 09:00 on the exam date
+  EXAM_HOUR: 9,           // default exam start when no time is set (settings.examTime)
 });
 
 // Correct answers only count as separate evidence when at least an hour apart: answering the same
@@ -77,13 +77,14 @@ export function questionChance(s, at, q = null) {
   return Math.max(0, r) * (1 - slip) + (1 - Math.max(0, r)) * g;
 }
 
-// The moment the estimate is for: 09:00 on the exam date (or now, once the exam day has started);
-// without a valid future date, tomorrow at this time ("if the exam were tomorrow").
+// The moment the estimate is for: the exam date at settings.examTime (default 09:00), or now once
+// the exam has started; without a valid future date, tomorrow at this time ("if it were tomorrow").
 export function examMoment(settings, now = Date.now()) {
   const v = settings && settings.examDate;
   if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
     const [y, mo, d] = v.split('-').map(Number);
-    const start = new Date(y, mo - 1, d, MODEL.EXAM_HOUR, 0, 0, 0).getTime();
+    const tm = settings && typeof settings.examTime === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(settings.examTime) ? settings.examTime.split(':').map(Number) : [MODEL.EXAM_HOUR, 0];
+    const start = new Date(y, mo - 1, d, tm[0], tm[1], 0, 0).getTime();
     const endOfDay = new Date(y, mo - 1, d, 23, 59, 59, 999).getTime();
     if (now <= endOfDay) return Math.max(start, now);
   }
