@@ -1,5 +1,7 @@
 // One session engine; every mode is a preset. The UI only calls: current(), answer(), skip(),
 // tick(now) and end(now). Every answer yields an append-only event.
+// Exam presets (examWording) show the exam computer's wording (q.exam) and allow skip(): a skipped
+// question goes to the back of the queue, like the real exam returning to unanswered questions.
 import { RULES, MODES } from './constants.js';
 import { shuffleOptions, shuffleArray, uuid } from './shuffle.js';
 import * as sel from './selection.js';
@@ -10,7 +12,7 @@ export const PRESETS = {
   [MODES.adaptive]:    { label: 'Έξυπνο τεστ', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
   [MODES.wrong]:       { label: 'Επανάληψη λαθών', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
   [MODES.due]:         { label: 'Σήμερα', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.exam]:        { label: 'Προσομοίωση εξετάσεων', timerMs: RULES.EXAM_TIME_MS, perQuestionMs: null, shuffle: true, feedback: 'end', endRule: 'queue', loop: false, maxWrong: RULES.EXAM_MAX_WRONG },
+  [MODES.exam]:        { label: 'Προσομοίωση εξετάσεων', timerMs: RULES.EXAM_TIME_MS, perQuestionMs: null, shuffle: true, feedback: 'end', endRule: 'queue', loop: false, maxWrong: RULES.EXAM_MAX_WRONG, examWording: true, skip: true },
   [MODES.hard]:        { label: 'Δύσκολο τεστ', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false, hard: true },
   [MODES.trap]:        { label: 'Ερωτήσεις-παγίδες', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
   [MODES.speed]:       { label: 'Κόντρα στον χρόνο', timerMs: null, perQuestionMs: RULES.SPEED_ROUND_MS, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
@@ -25,8 +27,18 @@ export const PRESETS = {
   [MODES.marathon]:    { label: 'Μαραθώνιος', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
   [MODES.hardest]:     { label: 'Οι πιο δύσκολες', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
   [MODES.numbers]:     { label: 'Αριθμοί & όρια', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
-  [MODES.hardexam]:    { label: 'Σκληρή προσομοίωση', timerMs: RULES.HARD_EXAM_TIME_MS, perQuestionMs: null, shuffle: true, feedback: 'end', endRule: 'queue', loop: false, maxWrong: RULES.HARD_EXAM_MAX_WRONG },
+  [MODES.hardexam]:    { label: 'Σκληρή προσομοίωση', timerMs: RULES.HARD_EXAM_TIME_MS, perQuestionMs: null, shuffle: true, feedback: 'end', endRule: 'queue', loop: false, maxWrong: RULES.HARD_EXAM_MAX_WRONG, examWording: true, skip: true },
+  [MODES.twins]:       { label: 'Δίδυμες ερωτήσεις', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
+  [MODES.proof]:       { label: 'Τελικός έλεγχος', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
+  [MODES.morning]:     { label: 'Πρωί των εξετάσεων', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'zeroed', loop: true },
 };
+
+// The exam computer's wording of a question, index-aligned with the booklet options, or null.
+export function examWording(q) {
+  const alt = q.exam;
+  if (!alt || !Array.isArray(alt.options) || alt.options.length !== q.options.length) return null;
+  return { text: alt.text || q.text, options: alt.options.map((o, i) => o || q.options[i]) };
+}
 
 // Builds the initial queue for a mode. `params` carries mode-specific choices.
 export function buildQueue(mode, questions, state, settings, now, params = {}, rnd = Math.random) {
@@ -43,7 +55,7 @@ export function buildQueue(mode, questions, state, settings, now, params = {}, r
     case MODES.adaptive: return sel.adaptive(pool, state, now, params.count || 20, rnd);
     case MODES.wrong: return sel.wrongBin(pool, state, rnd);
     case MODES.due: return sel.dueToday(pool, state, now, rnd);
-    case MODES.exam: return sel.random(bookletPool, RULES.EXAM_QUESTIONS, rnd);
+    case MODES.exam: return sel.examByGroups(bookletPool, RULES.EXAM_QUESTIONS, rnd);
     case MODES.hard: return sel.hardClusters(pool, state, params.count || 24, rnd);
     case MODES.trap: return sel.trapPairs(pool, params.count || 10, rnd);
     case MODES.speed: return sel.random(pool, params.count || 20, rnd);
@@ -63,7 +75,10 @@ export function buildQueue(mode, questions, state, settings, now, params = {}, r
     case MODES.marathon: return sel.random(pool, 0, rnd);
     case MODES.hardest: return sel.hardest(pool, state, params.count || RULES.HARDEST_COUNT, rnd);
     case MODES.numbers: return sel.numbers(pool, rnd);
-    case MODES.hardexam: return sel.random(bookletPool, RULES.EXAM_QUESTIONS, rnd);
+    case MODES.hardexam: return sel.examByGroups(bookletPool, RULES.EXAM_QUESTIONS, rnd);
+    case MODES.twins: return sel.twins(pool, rnd);
+    case MODES.proof: return sel.proof(pool, state, now, rnd);
+    case MODES.morning: return sel.morning(pool, state, rnd);
     default: throw new Error(`unknown mode ${mode}`);
   }
 }
@@ -109,8 +124,31 @@ export class Session {
       } else { this.cur = null; return; }
     }
     const q = this.byId.get(this.queue[this.idx]);
-    const order = this.preset.shuffle ? shuffleOptions(q.options, this.rnd) : q.options.map((_, i) => i);
-    this.cur = { q, order, shuffled: this.preset.shuffle, shownAt: now, deadline: this.preset.perQuestionMs ? now + this.preset.perQuestionMs : null, revealed: false };
+    const view = this._view(q);
+    const order = this.preset.shuffle ? shuffleOptions(view.options, this.rnd) : q.options.map((_, i) => i);
+    this.cur = { q, view, order, shuffled: this.preset.shuffle, shownAt: now, deadline: this.preset.perQuestionMs ? now + this.preset.perQuestionMs : null, revealed: false };
+  }
+
+  // Which wording to show. Exam presets always use the exam computer's wording; other modes mix
+  // both so either looks familiar. The options stay index-aligned, so answers and events are the
+  // same whichever wording is shown. (rnd is only drawn for questions that have two wordings.)
+  _view(q) {
+    const alt = examWording(q);
+    const useExam = !!alt && (this.preset.examWording || this.rnd() < 0.5);
+    return useExam ? { ...alt, exam: true, hasAlt: true } : { text: q.text, options: q.options, exam: false, hasAlt: !!alt };
+  }
+
+  // Exam presets: leave the current question for later. It moves to the back of the queue and
+  // returns after the others, like the real exam. No event is recorded for a skip.
+  skip(now = Date.now()) {
+    if (this.ended || !this.cur || !this.preset.skip) return false;
+    const rest = this.queue.length - this.idx;
+    if (rest <= 1) return false;
+    const [id] = this.queue.splice(this.idx, 1);
+    this.queue.push(id);
+    this.skipped = (this.skipped || 0) + 1;
+    this._prepare(now);
+    return true;
   }
 
   current() { return this.ended ? null : this.cur; }
@@ -149,7 +187,7 @@ export class Session {
       m: this.mode, s: this.id, cf: this.confidenceOn ? confidence : null,
       sh: shuffled, tl: this.preset.perQuestionMs || null, hd: this.hard, rc: !!this.preset.recall,
     };
-    this.results.push({ qid: q.id, ok, ch: choiceIdx, ms, order, correct: q.correct });
+    this.results.push({ qid: q.id, ok, ch: choiceIdx, ms, order, correct: q.correct, view: this.cur.view });
     if (ok) { this.correctCount++; this.pending.delete(q.id); }
     else {
       this.wrongs.push(q.id);
@@ -183,7 +221,18 @@ export class Session {
     else if (this.mode === MODES.ptest) passed = this.endReason === 'done' && answered > 0 && (this.correctCount / answered) >= RULES.PTEST_PASS;
     let run = null;
     if (this.mode === MODES.sudden) run = this.correctCount;
-    return { mode: this.mode, params: this.params, sid: this.id, answered, total: this.queue.length, correct: this.correctCount, wrong, wrongs: [...this.wrongs], durationMs: (this.endedAt || this._now || this.startedAt) - this.startedAt, completed, passed, run, endReason: this.endReason, timed: this.timed };
+    // «Πρακτικό εξέτασης»: every question of an exam simulation, answered or not, in the wording shown.
+    let sheet = null;
+    if (this.preset.examWording) {
+      const done = new Map(this.results.map((r) => [r.qid, r]));
+      sheet = this.queue.map((qid) => {
+        const q = this.byId.get(qid);
+        const r = done.get(qid);
+        const view = r ? r.view : (examWording(q) || q);
+        return { qid, text: view.text, chosen: r && r.ch !== null ? view.options[r.ch] : null, correct: view.options[q.correct], ok: !!(r && r.ok), answered: !!r };
+      });
+    }
+    return { mode: this.mode, params: this.params, sid: this.id, answered, total: this.queue.length, correct: this.correctCount, wrong, wrongs: [...this.wrongs], durationMs: (this.endedAt || this._now || this.startedAt) - this.startedAt, completed, passed, run, endReason: this.endReason, timed: this.timed, skipped: this.skipped || 0, sheet };
   }
 
   sessionEvent(now = Date.now(), extra = {}) {

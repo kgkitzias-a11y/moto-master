@@ -1,0 +1,157 @@
+{
+ "3": {
+  "severity": "MISLEADING",
+  "problem": "It says \"τα 80 … km/h δεν ισχύουν για αυτή την κατηγορία\". But under the same key, 80 km/h *is* the limit for bikes up to 125 cc on an expressway (Q7) and on a motorway (Q55). A learner who believes this sentence will then get Q7 and Q55 wrong.",
+  "explanation": "Κατά τον ΚΟΚ, μοτοσυκλέτα έως 125 cc έχει όριο 70 km/h στο επαρχιακό δίκτυο εκτός κατοικημένης περιοχής· τα 80 km/h ισχύουν για την ίδια κατηγορία μόνο σε οδό ταχείας κυκλοφορίας και σε αυτοκινητόδρομο, ενώ τα 90 km/h είναι το επαρχιακό όριο για μοτοσυκλέτες άνω των 125 cc."
+ },
+ "11": {
+  "severity": "MISLEADING",
+  "problem": "It gives \"λεία\" (smooth) surface as the reason for *better* grip. A smooth surface means less grip, so the reason contradicts the claim. It also presents physics the manual does not state. Better to keep the reasoning to \"uniform surface, no potholes or patches\".",
+  "explanation": "Το εγχειρίδιο θεωρεί ότι το τμήμα με πρόσφατη ασφαλτόστρωση έχει ομοιόμορφη επιφάνεια χωρίς λακκούβες, ρωγμές και μπαλώματα, άρα καλύτερο βαθμό πρόσφυσης από το φθαρμένο οδόστρωμα· γι' αυτό το ακολουθείτε αντί να το αποφεύγετε."
+ },
+ "18": {
+  "severity": "MISLEADING",
+  "problem": "\"Ο ΚΟΚ απαγορεύει τη ρυμούλκηση από δίκυκλα\" and \"δεν έχει κατάλληλο σύστημα ζεύξης\" are blanket claims I cannot support. Motorcycles can be fitted with a hitch and approved light trailers exist. The question is only about towing another vehicle (bicycle or two-wheeler).",
+  "explanation": "Με δίκυκλο δεν ρυμουλκείτε άλλο όχημα, ούτε ποδήλατο ούτε άλλο δίκυκλο: η έλξη διαταράσσει επικίνδυνα την ισορροπία και των δύο οχημάτων και δεν μπορείτε να φρενάρετε ή να στρίψετε με ασφάλεια."
+ },
+ "71": {
+  "severity": "MISLEADING",
+  "problem": "It claims that checking chain tension needs \"ειδικά όργανα\". That is false: it is a 2–3 cm free-play check (see Q8). It also contradicts the Q43 explanation, which says the rider tensions the chain and inspects the plug. It does not separate Q71 (\"which checks belong at a specialised workshop\") from Q43 (\"which check can you NOT do yourself\" = brakes).",
+  "explanation": "Η ερώτηση ζητά ποιοι έλεγχοι γίνονται σε εξειδικευμένο συνεργείο, και κατά το εγχειρίδιο σωστή είναι η πληρέστερη επιλογή (αναφλεκτήρας, τάση αλυσίδας και ειδικά ο εξαεριωτήρας, του οποίου η ρύθμιση απαιτεί όργανα και εμπειρία)· οι επιλογές με «μόνον» είναι ελλιπείς. Προσοχή: διαφέρει από την ερώτηση «ποιον έλεγχο δεν μπορείτε να κάνετε μόνος σας», όπου η απάντηση είναι το σύστημα πεδήσεως."
+ },
+ "79": {
+  "severity": "MISLEADING",
+  "problem": "\"για μεγαλύτερο κυβισμό απαιτείται κατηγορία Α\" leaves out category A2. A2 covers bikes over 125 cc up to 35 kW, so the statement is false under the current categories (Directive 2006/126/EC).",
+  "explanation": "Η υποκατηγορία Α1 καλύπτει μοτοσυκλέτες έως 125 cc (και ισχύος έως 11 kW), όχι κάθε δίκυκλο ανεξαρτήτως κυβισμού ούτε αυτοκίνητα· για μεγαλύτερες μοτοσυκλέτες απαιτείται κατηγορία Α2 ή Α και για αυτοκίνητα κατηγορία Β."
+ },
+ "102": {
+  "severity": "LANG",
+  "problem": "\"αντιτυφλώνετε\" is not a Greek word. The explanation also skips option 3 (turning your head away).",
+  "explanation": "Όταν τυφλώνεστε δεν βλέπετε τον δρόμο μπροστά σας· το μόνο ασφαλές είναι να επιβραδύνετε ή να σταματήσετε μέχρι να επανέλθει η όρασή σας, χωρίς να κλείνετε τα μάτια, να γυρίζετε το κεφάλι αλλού ή να αναβοσβήνετε τα μεγάλα φώτα στον άλλο οδηγό."
+ },
+ "13": {
+  "severity": "WEAK",
+  "problem": "Q13 and Q66 are a confusable pair. Each one's correct answer is a distractor in the other (\"slowest\" sets the speed; \"fastest\" rides last). Neither explanation points this out.",
+  "explanation": "Η ομάδα κινείται με την ταχύτητα του πιο αργού δικύκλου, ώστε να μένει ενωμένη χωρίς κανείς να πιέζει τα όριά του. Προσοχή: στην ερώτηση «ποιο δίκυκλο παίρνει την τελευταία θέση» η απάντηση είναι το ταχύτερο, όχι το πιο αργό."
+ },
+ "66": {
+  "severity": "WEAK",
+  "problem": "Pair with Q13 (see above). Option 1 \"πηγαίνει πιο αργά\" is the answer to Q13, and the explanation does not say why it is wrong here.",
+  "explanation": "Την τελευταία θέση την παίρνει το δίκυκλο που μπορεί να αναπτύξει τη μεγαλύτερη ταχύτητα, ώστε να καλύπτει την ομάδα από πίσω και να την προλαβαίνει εύκολα. Το πιο αργό δίκυκλο δεν μπαίνει τελευταίο· αυτό ορίζει την ταχύτητα του σχηματισμού (άλλη ερώτηση)."
+ },
+ "21": {
+  "severity": "WEAK",
+  "problem": "It does not say why \"avoid it at all costs\" (option 0) is wrong. Q93 says to avoid a slippery patch *if you can*, so learners need the difference: here the patch appears suddenly, and a sharp swerve on it causes a fall.",
+  "explanation": "Πάνω στο λάδι η πρόσφυση είναι σχεδόν μηδενική· όταν η κηλίδα εμφανιστεί ξαφνικά, ο απότομος ελιγμός για να την αποφύγετε «με κάθε τρόπο» ή το γκάζι οδηγούν σε πτώση. Περνάτε με κλειστό γκάζι, χωρίς φρένο και με σταθερό τιμόνι σε ευθεία."
+ },
+ "28": {
+  "severity": "WEAK",
+  "problem": "The marked answer runs against intuition, and Q78 (on the open road) marks \"ανάμεσα σε αυτοκίνητα\" as the unsafe choice. The explanation should say this applies only while stopped at a signal. Its \"shield\" sentence is also unclear about who hits whom.",
+  "explanation": "Σύμφωνα με το εγχειρίδιο, όταν περιμένετε σταματημένοι στον σηματοδότη, το αυτοκίνητο πίσω σας λειτουργεί ως «ασπίδα»: αν ένα τρίτο όχημα δεν προλάβει να σταματήσει, θα χτυπήσει πρώτα εκείνο και όχι εσάς. Προσοχή: αυτό ισχύει μόνο στην αναμονή σε σηματοδότη· εν κινήσει στην εθνική οδό η θέση μέσα σε όμιλο αυτοκινήτων είναι η λιγότερο ασφαλής."
+ },
+ "78": {
+  "severity": "WEAK",
+  "problem": "Pair with Q28 (see above). It should contrast \"moving on the highway\" with \"waiting at a signal\".",
+  "explanation": "Εν κινήσει στην εθνική οδό, μέσα σε όμιλο αυτοκινήτων φαίνεστε λιγότερο και δεν έχετε χώρο διαφυγής· πολύ μπροστά ή πολύ πίσω από αυτά έχετε ελεύθερο χώρο και χρόνο αντίδρασης. Μην το μπερδέψετε με την αναμονή σε σηματοδότη, όπου το εγχειρίδιο θεωρεί ασφαλέστερη τη θέση ανάμεσα σε δύο αυτοκίνητα."
+ },
+ "30": {
+  "severity": "WEAK",
+  "problem": "It says \"εκτός από τα φώτα διασταύρωσης\" in the plural, while Q39 (same stem, about dipped beam) has \"ένα μόνο\" as its answer. It should point learners to the pair: main beam = up to two, dipped beam = only one.",
+  "explanation": "Μοτοσυκλέτα που αναπτύσσει πάνω από 40 km/h πρέπει να έχει φώτα πορείας (μεγάλα), ένα ή το πολύ δύο, συμμετρικά και κοντά το ένα στο άλλο. Μην το μπερδέψετε με το φως διασταυρώσεως (μεσαία), όπου η σωστή απάντηση είναι «ένα μόνο»."
+ },
+ "34": {
+  "severity": "WEAK",
+  "problem": "Q34 (truck or bus: \"ακριβώς πίσω\" is the answer) and Q90 (car: \"ακριβώς πίσω\" is a distractor) contradict each other unless the reason is given. A car has an interior mirror that sees directly behind; a truck or bus does not.",
+  "explanation": "Ο οδηγός φορτηγού ή λεωφορείου δεν έχει εσωτερικό καθρέπτη με θέα προς τα πίσω, οπότε το δίκυκλο ακριβώς πίσω του δεν φαίνεται σε κανέναν καθρέπτη. Στο επιβατικό αυτοκίνητο, αντίθετα, το «ακριβώς πίσω» φαίνεται από τον εσωτερικό καθρέπτη και ο κίνδυνος είναι οι νεκρές γωνίες πλάγια-πίσω."
+ },
+ "90": {
+  "severity": "WEAK",
+  "problem": "Pair with Q34 (see above). It does not say why \"ακριβώς πίσω\" (option 2) is wrong for a car.",
+  "explanation": "Στο επιβατικό αυτοκίνητο ο εσωτερικός καθρέπτης δείχνει ό,τι βρίσκεται ακριβώς πίσω· η μοτοσυκλέτα χάνεται στις νεκρές γωνίες πλάγια-πίσω, που δεν καλύπτουν οι καθρέπτες, και ο οδηγός μπορεί να στρίψει ή να αλλάξει λωρίδα πάνω της. Στο φορτηγό ή λεωφορείο, αντίθετα, η απάντηση είναι «ακριβώς από πίσω του»."
+ },
+ "43": {
+  "severity": "WEAK",
+  "problem": "Pair with Q71: the keys look contradictory (plug and chain: \"you can do it\" here, \"workshop\" there). The explanation should point to the different question.",
+  "explanation": "Ο έλεγχος της λειτουργικότητας των φρένων απαιτεί ειδικό εξοπλισμό και γίνεται σε νόμιμο συνεργείο, ενώ τον έλεγχο του μπουζί για φθορά ή αιθάλη και το τέντωμα της αλυσίδας μπορεί να τα κάνει ο ίδιος ο οδηγός. Προσοχή: διαφέρει από την ερώτηση «ποιοι έλεγχοι γίνονται σε εξειδικευμένο συνεργείο», όπου σωστή είναι η πλήρης επιλογή με τον εξαεριωτήρα."
+ },
+ "88": {
+  "severity": "WEAK",
+  "problem": "\"ανάβετε τη μεσαία σκάλα ως υπενθύμιση στον άλλο οδηγό\" is a doubtful reason, since dipped beam signals nothing. It also does not say why option 0 (high beams back) is wrong.",
+  "explanation": "Αν ανάψετε κι εσείς τα μεγάλα, θα τυφλωθεί και ο άλλος οδηγός· κλείνετε το γκάζι για να μειώσετε ταχύτητα, κρατάτε τη μεσαία σκάλα και κινείστε όσο πιο δεξιά γίνεται, ακολουθώντας τη διαγράμμιση μέχρι να περάσει το όχημα."
+ },
+ "93": {
+  "severity": "WEAK",
+  "problem": "\"περνάτε με σταθερό γκάζι\" sounds almost the same as distractor 2 (\"σταθερή ταχύτητα και πορεία\"). It does not explain that options 1 and 2 are only parts of the full answer.",
+  "explanation": "Η σωστή απάντηση είναι η πλήρης διαδικασία: αποφεύγετε το σημείο αν μπορείτε, αλλιώς επιβραδύνετε πριν φτάσετε και, πάνω στο ολισθηρό, δεν επιταχύνετε ούτε φρενάρετε, ενώ χαμηλώνετε το κέντρο βάρους πατώντας καλά στα μαρσπιέ. Οι επιλογές «προσπαθείτε να το αποφύγετε» και «σταθερή ταχύτητα» είναι μόνο μέρος αυτής της απάντησης."
+ },
+ "110": {
+  "severity": "WEAK",
+  "problem": "It does not help with the most tempting distractor, 1.6 mm, which learners know as the car limit.",
+  "explanation": "Σύμφωνα με το εγχειρίδιο, το ελάχιστο βάθος πέλματος για ελαστικά μοτοσυκλέτας είναι 1 mm· τα 1,6 mm είναι το γνωστό όριο των αυτοκινήτων και δεν είναι η απάντηση εδώ. Κάτω από το όριο το ελαστικό δεν απομακρύνει το νερό και γλιστράει."
+ },
+ "134": {
+  "severity": "WEAK",
+  "problem": "Q115 teaches \"lights = more visible\", but here \"lights on\" (option 0) is a distractor, and the explanation does not say why. At night lights are mandatory anyway; the extra measure is reflective clothing.",
+  "explanation": "Τη νύχτα τα φώτα της μοτοσυκλέτας είναι ούτως ή άλλως υποχρεωτικά, άρα το επιπλέον μέτρο για να διακρίνεστε είναι τα ρούχα με ανακλαστήρες, που επιστρέφουν το φως των άλλων οχημάτων και κάνουν ορατό τον ίδιο τον αναβάτη. Τα έντονα χρώματα βοηθούν μόνο με φως ημέρας."
+ },
+ "115": {
+  "severity": "WEAK",
+  "problem": "Twin set Q115/Q116/Q117 (minor). The reasoning is correct and names the two fixed distractors. It never says that the same stem appears with a different correct option, or gives the rule for picking it.",
+  "explanation": "Σε αυτή την εκδοχή η επιλογή που σας κάνει πιο αντιληπτούς είναι η χρήση φώτων, που κάνει τη μοτοσυκλέτα να ξεχωρίζει· το γκρίζο κράνος και τα μαύρα ρούχα χάνονται στο φόντο. Η ίδια ερώτηση υπάρχει και με «ρούχα με ανακλαστήρες» ή «άσπρο κράνος» στη θέση των φώτων: σωστή είναι πάντα η επιλογή που δεν είναι γκρίζα ή μαύρη."
+ },
+ "116": {
+  "severity": "WEAK",
+  "problem": "Twin set Q115–117 (minor, as above).",
+  "explanation": "Σε αυτή την εκδοχή σωστά είναι τα ρούχα με ανακλαστήρες, που αντανακλούν το φως και τραβούν το βλέμμα· το γκρίζο κράνος και τα μαύρα δερμάτινα δεν προσφέρουν αντίθεση. Η ίδια ερώτηση εμφανίζεται και με «χρήση φώτων» ή «άσπρο κράνος»: σωστή είναι πάντα η επιλογή που δεν είναι γκρίζα ή μαύρη."
+ },
+ "117": {
+  "severity": "WEAK",
+  "problem": "Twin set Q115–117 (minor, as above).",
+  "explanation": "Σε αυτή την εκδοχή σωστό είναι το άσπρο κράνος, που είναι ανοιχτόχρωμο και ξεχωρίζει από το φόντο· το γκρίζο κράνος και τα μαύρα δερμάτινα δεν προσφέρουν αντίθεση. Η ίδια ερώτηση εμφανίζεται και με «χρήση φώτων» ή «ρούχα με ανακλαστήρες»: σωστή είναι πάντα η επιλογή που δεν είναι γκρίζα ή μαύρη."
+ },
+ "118": {
+  "severity": "WEAK",
+  "problem": "Twin Q118/Q119 (minor). There is no cue about which option set this is. \"στερεωμένο στο πλαίσιο\" is also too general, since some touring fairings mount on the forks.",
+  "explanation": "Σε αυτή την εκδοχή σωστό είναι το τουριστικού τύπου φαίρινγκ, που είναι μεγάλο και καλύπτει κορμό και πόδια από αέρα, βροχή και κρύο. Ο ανεμοθώρακας πάνω στο τιμόνι και το σπορ φαίρινγκ είναι λάθος σε όλες τις εκδοχές· στην άλλη εκδοχή της ερώτησης σωστός είναι ο «ανεμοθώρακας σταθερός»."
+ },
+ "119": {
+  "severity": "WEAK",
+  "problem": "Twin Q118/Q119 (minor). There is no cue about which option set this is.",
+  "explanation": "Σε αυτή την εκδοχή σωστός είναι ο σταθερός ανεμοθώρακας, που στερεώνεται στο πλαίσιο και δεν κινείται με το τιμόνι, άρα προστατεύει σταθερά από αέρα και βροχή. Ο ανεμοθώρακας πάνω στο τιμόνι και το σπορ φαίρινγκ είναι λάθος σε όλες τις εκδοχές· στην άλλη εκδοχή σωστό είναι το «τουριστικού τύπου φαίρινγκ»."
+ },
+ "128": {
+  "severity": "WEAK",
+  "problem": "Twin Q128/Q129. It does not name the fixed distractors (suspension, exhaust) or the twin's answer.",
+  "explanation": "Η μαλακωμένη πίσσα γίνεται ολισθηρή και μειώνει την πρόσφυση των ελαστικών, ιδίως στις στροφές και στο φρενάρισμα· η ανάρτηση και η εξάτμιση δεν επηρεάζονται. Η ίδια ερώτηση υπάρχει και με σωστή απάντηση «η τροχοπέδηση», που είναι συνέπεια της ίδιας μειωμένης πρόσφυσης."
+ },
+ "129": {
+  "severity": "WEAK",
+  "problem": "Twin Q128/Q129. Its wording \"η πέδηση γίνεται λιγότερο αποτελεσματική\" is almost the same as Q130's distractor 2 (\"επηρεάζεται η αποτελεσματικότητα των φρένων\", marked wrong there). It should tie braking to the slippery road, not to the brakes themselves.",
+  "explanation": "Η τροχοπέδηση επηρεάζεται επειδή η μαλακωμένη πίσσα γλιστρά, όχι επειδή χαλάνε τα φρένα: με λιγότερη πρόσφυση η απόσταση ακινητοποίησης μεγαλώνει, ενώ η ανάρτηση και η εξάτμιση δεν επηρεάζονται. Σε αυτή την εκδοχή η σωστή επιλογή είναι «η τροχοπέδηση»· στην άλλη, με την ίδια διατύπωση, είναι «η πρόσφυση των ελαστικών»."
+ },
+ "130": {
+  "severity": "WEAK",
+  "problem": "Related to Q128/Q129. Learners who memorised \"braking\" from Q129 will pick option 2 here. The explanation does not say why option 2 (brake effectiveness) and option 1 (shorter braking distance) are wrong.",
+  "explanation": "Το άμεσο αποτέλεσμα της ζέστης είναι ότι ο δρόμος γλιστρά από τη λιωμένη πίσσα· τα φρένα ως μηχανισμός δεν αλλάζουν, και η απόσταση πέδησης μεγαλώνει, δεν μειώνεται. Στην παρόμοια ερώτηση με επιλογές «ανάρτηση / τροχοπέδηση / εξάτμιση» σωστή είναι η τροχοπέδηση, γιατί εκεί δεν υπάρχει η επιλογή «ο δρόμος γλιστρά»."
+ },
+ "143": {
+  "severity": "WEAK",
+  "problem": "Twin Q143/Q144 (minor). The correct answer differs in both text and position (index 2 here, 1 in Q144). There is no cue about which option set this is.",
+  "explanation": "Σε αυτή την εκδοχή σωστή είναι η κίτρινη αντιολισθητική διαγράμμιση, που έχει τραχιά επιφάνεια για πρόσφυση· η λευκή διαγράμμιση (ιδίως βρεγμένη) και η λιωμένη πίσσα γλιστρούν και είναι λάθος σε όλες τις εκδοχές. Στην άλλη εκδοχή της ερώτησης, με την ίδια διατύπωση, σωστή είναι η «στεγνή άσφαλτος»."
+ },
+ "144": {
+  "severity": "WEAK",
+  "problem": "Twin Q143/Q144 (minor, as above).",
+  "explanation": "Σε αυτή την εκδοχή σωστή είναι η στεγνή, καθαρή άσφαλτος, που δίνει την καλύτερη πρόσφυση· η λευκή διαγράμμιση (ιδίως βρεγμένη) και η λιωμένη πίσσα γλιστρούν και είναι λάθος σε όλες τις εκδοχές. Στην άλλη εκδοχή σωστή είναι η «κίτρινη αντιολισθητική διαγράμμιση»."
+ },
+ "169": {
+  "severity": "WEAK",
+  "problem": "Twin Q169/Q170. It addresses option 0 but not the twin, and not option 2 (holding items in your hands).",
+  "explanation": "Σε αυτή την εκδοχή σωστό είναι να φορτώνετε όσο πιο κοντά στο κέντρο βάρους, ώστε να επηρεάζεται ελάχιστα η ισορροπία· φορτίο πίσω από τον πίσω άξονα ελαφρώνει τον εμπρός τροχό και τα πράγματα στα χέρια εμποδίζουν τον χειρισμό. Στην άλλη εκδοχή της ερώτησης, με τις ίδιες λάθος επιλογές, σωστό είναι «να μην υπερβαίνετε το όριο φόρτωσης του κατασκευαστή»."
+ },
+ "170": {
+  "severity": "WEAK",
+  "problem": "Twin Q169/Q170. It does not mention the distractors or the twin's answer.",
+  "explanation": "Σε αυτή την εκδοχή σωστό είναι να μην υπερβαίνετε το όριο φόρτωσης του κατασκευαστή, που αντιστοιχεί στην αντοχή πλαισίου, ανάρτησης, ελαστικών και φρένων· φορτίο πίσω από τον πίσω άξονα και πράγματα στα χέρια είναι λάθος σε όλες τις εκδοχές. Στην άλλη εκδοχή σωστό είναι «όσο γίνεται πλησιέστερα στο κέντρο βάρους»."
+ }
+}

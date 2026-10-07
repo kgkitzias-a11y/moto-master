@@ -6,6 +6,7 @@ import { RULES, MODES } from '../engine/constants.js';
 import { startSession } from '../engine/session.js';
 import { dayKey } from '../engine/time.js';
 import { planControls } from './planner.js';
+import { finalStretchCard } from './final.js';
 export { answersToday } from '../engine/planner.js';
 
 export function ring(pct, label, sub, cls = '') {
@@ -77,7 +78,7 @@ function recommend(ctx, due, bin, weakCount, remainingToGoal, todayDone) {
   if (due > 0) return { mode: MODES.goal, params: { remaining: remainingToGoal }, title: 'Η σημερινή εξάσκηση', sub: `${due} ερωτήσεις είναι για επανάληψη — ${bin ? bin + ' από τα λάθη σου. ' : ''}Παίρνεις τις ${remainingToGoal} επόμενες προς τον στόχο.`, label: remainingToGoal < (ctx.progress.settings.dailyGoal || 40) ? `Συνέχισε (${remainingToGoal} ακόμα) ▶` : 'Ξεκίνα τώρα ▶' };
   if (bin > 0) return { mode: MODES.wrong, params: {}, title: 'Διόρθωσε τα λάθη σου', sub: `${bin} ερωτήσεις που σε έριξαν. Μέχρι να μη μείνει καμία.`, label: 'Ξεκίνα τώρα ▶' };
   if (weakCount > 0) return { mode: MODES.tomorrow, params: {}, title: 'Δούλεψε τις αδύναμες', sub: `${weakCount} ερωτήσεις κάτω από επίπεδο ${RULES.WEAK_LEVEL}.`, label: 'Ξεκίνα τώρα ▶' };
-  return { mode: MODES.exam, params: {}, title: 'Προσομοίωση εξετάσεων', sub: '10 ερωτήσεις, 10 λεπτά, το πολύ 1 λάθος. Όπως στις πραγματικές εξετάσεις.', label: 'Ξεκίνα τώρα ▶' };
+  return { mode: MODES.exam, params: {}, title: 'Προσομοίωση εξετάσεων', sub: `${RULES.EXAM_QUESTIONS} ερωτήσεις, ${RULES.EXAM_TIME_MS / 60000} λεπτά, το πολύ ${RULES.EXAM_MAX_WRONG} λάθος. Όπως στις πραγματικές εξετάσεις.`, label: 'Ξεκίνα τώρα ▶' };
 }
 
 export function renderHome(ctx) {
@@ -159,6 +160,7 @@ export function renderHome(ctx) {
 
   return h('div', null,
     hero,
+    finalStretchCard(ctx, start),
     planControls(ctx),
     progressCard(ctx),
     readinessCard(ctx),
@@ -166,7 +168,8 @@ export function renderHome(ctx) {
     h('p', { class: 'small muted' }, `Όλο το βιβλίο σε ${sets.length} σταθερά τεστ των ${RULES.PTEST_SIZE}. Ένα τεστ «περνάει» μόνο αν απαντήσεις σωστά σε όλες τις ερωτήσεις του (100 %).`),
     ptests,
     sections,
-    h('p', { class: 'small muted', style: { marginTop: '14px' } }, h('a', { href: '#/sheet' }, '📄 Σκονάκι'), ' — όλες οι ερωτήσεις με τη σωστή απάντηση, ανά κατηγορία.'),
+    h('p', { class: 'small muted', style: { marginTop: '14px' } }, h('a', { href: '#/cards', id: 'cards-link' }, '🗂 Κάρτες'), ' — όρια ταχύτητας, δίδυμες ερωτήσεις, τι ισχύει στις εξετάσεις.'),
+    h('p', { class: 'small muted' }, h('a', { href: '#/sheet' }, '📄 Σκονάκι'), ' — όλες οι ερωτήσεις με τη σωστή απάντηση, ανά κατηγορία.'),
   );
 }
 

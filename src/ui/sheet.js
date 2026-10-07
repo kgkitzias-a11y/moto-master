@@ -14,7 +14,8 @@ export function renderSheet(ctx) {
       if (!rows.length) return null;
       return h('div', null, h('h2', null, `${c} (${rows.length})`), rows.map((q) => h('div', { class: 'qa' },
         h('div', { class: 'q' }, h('span', { class: 'id' }, `#${q.id}`), q.text, q.tier === 'archive' ? h('span', { class: 'tag' }, 'εκτός ύλης') : null),
-        h('div', { class: 'a' }, `${LETTERS[q.correct]}. ${q.options[q.correct]}`))));
+        h('div', { class: 'a' }, `${LETTERS[q.correct]}. ${q.options[q.correct]}`),
+        q.exam && q.exam.options[q.correct] !== q.options[q.correct] ? h('div', { class: 'small muted' }, `Στις εξετάσεις: ${q.exam.options[q.correct]}`) : null)));
     }).filter(Boolean));
   };
   search.addEventListener('input', render);

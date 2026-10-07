@@ -74,6 +74,39 @@ const drivers = {
     expect(s.answered).toBe(3);
   },
 
+  async twins(page) {
+    await clickMode(page, 'twins');
+    await expect(page).toHaveURL(/#\/session$/);
+    await expect(page.locator('.qid .twin-tag')).toBeVisible();
+    const verdict = await answerOne(page);
+    expect(verdict).toMatch(/^(Σωστό|Λάθος)/);
+    await expect(page.locator('.feedback .twin-note')).toContainText('Δίδυμη');
+    await clickNext(page);
+    await answerOne(page);
+    await endSession(page);
+    const s = await expectSummary(page, 'twins');
+    expect(s.answered).toBe(2);
+  },
+
+  async proof(page) {
+    await clickMode(page, 'proof');
+    await expect(page).toHaveURL(/#\/session$/);
+    await expect(page.locator('.session-top')).toContainText('1/140');
+    const r = await drive(page, { max: 3 });
+    expect(r.answered).toBe(3);
+    const s = await expectSummary(page, 'proof');
+    expect(s.answered).toBe(3);
+  },
+
+  async morning(page) {
+    await clickMode(page, 'morning');
+    await expect(page).toHaveURL(/#\/session$/);
+    const r = await drive(page, { max: 3 });
+    expect(r.answered).toBe(3);
+    const s = await expectSummary(page, 'morning');
+    expect(s.answered).toBe(3);
+  },
+
   async trap(page) {
     await clickMode(page, 'trap');
     await expect(page).toHaveURL(/#\/session$/);
@@ -223,7 +256,7 @@ const drivers = {
     const { byId } = await fetchQuestions(page);
     await clickMode(page, 'hardexam');
     await expect(page).toHaveURL(/#\/session$/);
-    await expect(page.locator('.session-top')).toContainText('Σκληρή προσομοίωση · 1/10');
+    await expect(page.locator('.session-top')).toContainText('Σκληρή προσομοίωση · ερώτηση 1/10');
     await expect(page.locator('#clock')).toHaveText(/^[45]:\d\d$/); // 5-minute session timer visible
     await expect(page.locator('.timerbar')).not.toHaveClass(/hidden/);
     // Run 1: the very first answer is wrong → zero tolerance → ΚΟΠΗΚΕΣ, but only at the end (no feedback in between).

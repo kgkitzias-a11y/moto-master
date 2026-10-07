@@ -11,6 +11,7 @@ import { renderSettings } from './ui/settings.js';
 import { renderCertification } from './ui/certification.js';
 import { renderModeSetup } from './ui/setup.js';
 import { renderSheet } from './ui/sheet.js';
+import { renderCards } from './ui/cards.js';
 import { applyTheme } from './ui/fx.js';
 
 export const ctx = {
@@ -51,7 +52,7 @@ function consumePairing() {
 const routes = {
   '': renderHome, '/': renderHome,
   '/stats': renderStats, '/review': renderReview, '/settings': renderSettings, '/certification': renderCertification,
-  '/session': renderSession, '/summary': renderSummary, '/sheet': renderSheet,
+  '/session': renderSession, '/summary': renderSummary, '/sheet': renderSheet, '/cards': renderCards,
 };
 
 function route() {

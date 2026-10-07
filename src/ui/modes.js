@@ -4,7 +4,7 @@ import { buildQueue } from '../engine/session.js';
 // Mode catalogue, grouped Genie-style. `setup: true` opens a parameters screen first.
 export const SECTIONS = [
   { id: 'exam', title: 'Εξετάσεις', modes: [
-    { id: MODES.exam, title: 'Προσομοίωση εξετάσεων', desc: `${RULES.EXAM_QUESTIONS} ερωτήσεις σε ${RULES.EXAM_TIME_MS / 60000}′, το πολύ ${RULES.EXAM_MAX_WRONG} λάθος.`, setup: false },
+    { id: MODES.exam, title: 'Προσομοίωση εξετάσεων', desc: `Όπως στις εξετάσεις: ${RULES.EXAM_QUESTIONS} ερωτήσεις, μία από κάθε ομάδα, σε ${RULES.EXAM_TIME_MS / 60000}′, το πολύ ${RULES.EXAM_MAX_WRONG} λάθος.`, setup: false },
     { id: MODES.hardexam, title: 'Σκληρή προσομοίωση', desc: `${RULES.EXAM_QUESTIONS} ερωτήσεις σε ${RULES.HARD_EXAM_TIME_MS / 60000}′, κανένα λάθος, χωρίς βοήθεια.`, setup: false, hard: true },
   ] },
   { id: 'review', title: 'Επανάληψη', modes: [
@@ -12,6 +12,8 @@ export const SECTIONS = [
     { id: MODES.wrong, title: 'Επανάληψη λαθών', desc: 'Μόνο τα λάθη σου· ό,τι χάνεις ξαναμπαίνει μέχρι να μη μείνει κανένα.', setup: false },
     { id: MODES.hardest, title: 'Οι πιο δύσκολες', desc: `Οι ${RULES.HARDEST_COUNT} ερωτήσεις με τη χειρότερη επίδοσή σου.`, setup: false, hard: true },
     { id: MODES.tomorrow, title: 'Αύριο εξετάσεις', desc: 'Μόνο αδύναμες + τα λάθη σου· ξανά και ξανά, μέχρι να μη μείνει καμία.', setup: false },
+    { id: MODES.proof, title: 'Τελικός έλεγχος', desc: 'Όσες δεν έχεις απαντήσει σωστά τις τελευταίες 48 ώρες· ξανά μέχρι να μη μείνει καμία.', setup: false },
+    { id: MODES.morning, title: 'Πρωί των εξετάσεων', desc: 'Όσες έχεις χάσει ποτέ, οι δίδυμες και οι αριθμοί· η τελευταία επανάληψη.', setup: false },
   ] },
   { id: 'practice', title: 'Εξάσκηση', modes: [
     { id: MODES.adaptive, title: 'Έξυπνο τεστ', desc: 'Προτεραιότητα στις νέες, τις αδύναμες και όσες είναι για επανάληψη.', setup: true },
@@ -25,6 +27,7 @@ export const SECTIONS = [
   ] },
   { id: 'hard', title: 'Σκληρά τεστ', modes: [
     { id: MODES.hard, title: 'Δύσκολο τεστ', desc: 'Ερωτήσεις που μπερδεύεις, η μία μετά την άλλη· λάθος → επίπεδο 0.', setup: false, hard: true },
+    { id: MODES.twins, title: 'Δίδυμες ερωτήσεις', desc: 'Ίδια ή σχεδόν ίδια ερώτηση, άλλη σωστή απάντηση· η μία μετά την άλλη.', setup: false, hard: true },
     { id: MODES.trap, title: 'Ερωτήσεις-παγίδες', desc: 'Ζευγάρια όμοιων ερωτήσεων, η μία μετά την άλλη.', setup: false, hard: true },
     { id: MODES.speed, title: 'Κόντρα στον χρόνο', desc: `${RULES.SPEED_ROUND_MS / 1000} δευτερόλεπτα για κάθε ερώτηση.`, setup: false, hard: true },
     { id: MODES.sudden, title: 'Μέχρι το πρώτο λάθος', desc: 'Ένα λάθος και τέλος. Κρατάει τα καλύτερα σερί σου.', setup: false, hard: true },

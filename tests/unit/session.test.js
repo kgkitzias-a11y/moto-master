@@ -247,9 +247,9 @@ describe('Session engine', () => {
   describe('exam', () => {
     const mk = (seed = 1) => startSession(MODES.exam, { questions: Q, state: emptyState(), settings: {}, now: T0, rnd: mulberry32(seed) });
 
-    test('preset: feedback end, 10-minute session timer, maxWrong 1, timed', () => {
+    test('preset: feedback end, official 15-minute session timer, maxWrong 1, timed', () => {
       assert.equal(PRESETS[MODES.exam].feedback, 'end');
-      assert.equal(PRESETS[MODES.exam].timerMs, 10 * 60 * 1000);
+      assert.equal(PRESETS[MODES.exam].timerMs, 15 * 60 * 1000);
       assert.equal(PRESETS[MODES.exam].maxWrong, 1);
       const s = mk();
       assert.equal(s.total, 10);
@@ -258,7 +258,7 @@ describe('Session engine', () => {
       assert.equal(s.remainingMs, RULES.EXAM_TIME_MS);
     });
 
-    test('tick past 10 minutes returns session-timeout, ends the session, passed=false', () => {
+    test('tick past the exam time returns session-timeout, ends the session, passed=false', () => {
       const s = mk();
       s.answer(correctOf(s), { now: T0 + 1000 });
       assert.equal(s.tick(T0 + RULES.EXAM_TIME_MS - 1), null);

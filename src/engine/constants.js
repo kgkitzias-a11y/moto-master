@@ -12,7 +12,8 @@ export const RULES = Object.freeze({
   SOLID_MEDIAN_MS: 6000,
   EXAM_QUESTIONS: 10,
   EXAM_MAX_WRONG: 1,
-  EXAM_TIME_MS: 10 * 60 * 1000,            // official per-questionnaire timer (see DECISIONS)
+  EXAM_TIME_MS: 15 * 60 * 1000,            // official: 15′ for Ερωτηματολόγιο 2 (ΥΑ 50984/7947/2013 άρθ. 22, D-032)
+  EXAM_GROUPS: 10,                         // the exam draws one question from each official group 1–10 (ExerBase.mdb)
   READY_MOCKS: 5,                          // 5 consecutive 10/10 timed mocks
   READY_MOCK_DAYS: 3,                      // … on ≥3 distinct days
   READY_SUDDEN_DEATH: 60,                  // one Sudden Death run ≥60
@@ -25,6 +26,8 @@ export const RULES = Object.freeze({
   HARD_EXAM_MAX_WRONG: 0,
   READY_HARD_EXAMS: 3,                     // readiness also needs 3 perfect hard simulators
   HARDEST_COUNT: 20,
+  PROOF_WINDOW_MS: 48 * 60 * 60 * 1000,    // «Τελικός έλεγχος»: last answer correct within 48 h
+  PASS_TARGET: 0.995,                      // pass-chance target shown next to the readiness gate
 });
 
 export const MODES = Object.freeze({
@@ -48,6 +51,9 @@ export const MODES = Object.freeze({
   hardest: 'hardest',    // your personally hardest questions
   numbers: 'numbers',    // every question with a number/limit in it
   hardexam: 'hardexam',  // 10 questions, 5 min, zero mistakes, no feedback
+  twins: 'twins',        // look-alike questions back to back
+  proof: 'proof',        // «Τελικός έλεγχος»: every question correct within the last 48 h
+  morning: 'morning',    // exam-morning review: ever-missed + look-alikes + numbers
 });
 
 // Options that must stay in their printed (last) position when shuffling.

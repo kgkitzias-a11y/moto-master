@@ -53,7 +53,7 @@ export async function fetchQuestions(page) {
 // Id of the question currently on screen (from the "#N · category" line).
 export async function currentQuestionId(page) {
   const qid = page.locator('.qid span').first();
-  await qid.waitFor();
+  await qid.waitFor({ state: 'attached' }); // exam simulations keep the id in the DOM but hidden
   const m = (await qid.innerText()).match(/#(\d+)/);
   if (!m) throw new Error('no question id on screen');
   return Number(m[1]);

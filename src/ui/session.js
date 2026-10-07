@@ -38,20 +38,25 @@ export function renderSession(ctx) {
     if (!cur) { finish(); return; }
     s.show(Date.now());
     confidence = null; locked = false;
-    const { q, order } = cur;
+    const { q, order, view } = cur;
+    const examLike = !!s.preset.examWording; // real-exam screen: no id/category, exam wording, skip
     const meta = modeMeta(s.mode);
     const comboEl = h('span', { class: `combo ${combo >= 10 ? 'c10' : combo >= 5 ? 'c5' : ''}`, id: 'combo' }, combo >= 2 ? `🔥 ${combo} στη σειρά` : '');
     const top = h('div', { class: 'session-top' },
-      h('span', null, `${meta ? meta.title : s.mode} · ${s.position}/${s.mode === MODES.sudden ? '∞' : s.total}`),
+      h('span', null, examLike ? `${meta ? meta.title : s.mode} · ερώτηση ${s.results.length + 1}/${s.total}` : `${meta ? meta.title : s.mode} · ${s.position}/${s.mode === MODES.sudden ? '∞' : s.total}`),
       comboEl,
       h('span', { id: 'clock' }, ''),
       h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onClick: () => { if (confirm('Να σταματήσει το τεστ;')) { s.abort(); finish(); } } }, 'Τέλος'));
     const bar = h('div', { class: 'timerbar hidden' }, h('div'));
     const prog = s.mode === MODES.sudden ? null : h('div', { class: 'progress' }, h('div', { style: { width: `${((s.position - 1) / Math.max(1, s.total)) * 100}%` } }));
     const img = q.image ? h('img', { class: 'qimg', src: q.image, alt: 'εικόνα ερώτησης' }) : null;
+    // In exam simulations the id and category stay in the DOM (tests, screen readers) but are not shown:
+    // the real exam has no numbers, so recognising a question must come from its content.
     const card = h('div', { class: 'qcard' },
-      h('div', { class: 'qid' }, h('span', null, `#${q.id} · ${q.category}`), q.tier === 'archive' ? h('span', { class: 'tag' }, 'εκτός ύλης') : null),
-      h('div', { class: 'qtext' }, q.text), img);
+      h('div', { class: 'qid', hidden: examLike }, h('span', null, `#${q.id} · ${q.category}`), q.tier === 'archive' ? h('span', { class: 'tag' }, 'εκτός ύλης') : null,
+        !examLike && view.exam ? h('span', { class: 'tag exam-tag', title: 'Έτσι είναι διατυπωμένη στον υπολογιστή των εξετάσεων' }, 'διατύπωση εξετάσεων') : null,
+        !examLike && (q.twins || []).length ? h('span', { class: 'tag twin-tag', title: 'Υπάρχει παρόμοια ερώτηση με άλλη σωστή απάντηση' }, '⚠ δίδυμη') : null),
+      h('div', { class: 'qtext' }, view.text), img);
 
     const optButtons = [];
     const optionsEl = h('div', { class: 'options' });
@@ -60,8 +65,8 @@ export function renderSession(ctx) {
       const reveal = h('button', { class: 'btn btn-primary btn-block', type: 'button', onClick: () => { s.reveal(); reveal.remove(); showRecallAnswer(); } }, 'Δείξε την απάντηση');
       card.append(h('p', { class: 'muted small' }, 'Σκέψου την απάντηση, μετά δες τη σωστή και βαθμολόγησε τίμια.'), reveal);
       function showRecallAnswer() {
-        card.append(h('div', { class: 'feedback ok' }, h('div', { class: 'verdict' }, `Σωστή απάντηση: ${LETTERS[q.correct]}. ${q.options[q.correct]}`),
-          h('div', { class: 'options', style: { marginTop: '8px' } }, q.options.map((o, i) => h('div', { class: `opt ${i === q.correct ? 'correct' : 'dim'}` }, h('span', { class: 'k' }, LETTERS[i] + '.'), h('span', null, o)))),
+        card.append(h('div', { class: 'feedback ok' }, h('div', { class: 'verdict' }, `Σωστή απάντηση: ${LETTERS[q.correct]}. ${view.options[q.correct]}`),
+          h('div', { class: 'options', style: { marginTop: '8px' } }, view.options.map((o, i) => h('div', { class: `opt ${i === q.correct ? 'correct' : 'dim'}` }, h('span', { class: 'k' }, LETTERS[i] + '.'), h('span', null, o)))),
           q.explanation ? h('div', { class: 'explain' }, q.explanation) : null,
           h('div', { class: 'btn-row', style: { marginTop: '10px' } },
             h('button', { class: 'btn', type: 'button', onClick: () => submit(null, false) }, 'Δεν το ήξερα'),
@@ -70,10 +75,13 @@ export function renderSession(ctx) {
     } else {
       order.forEach((origIdx, displayIdx) => {
         const b = h('button', { class: 'opt', type: 'button', dataset: { orig: origIdx }, onClick: () => submit(origIdx) },
-          h('span', { class: 'k' }, LETTERS[displayIdx] + '.'), h('span', null, q.options[origIdx]));
+          h('span', { class: 'k' }, LETTERS[displayIdx] + '.'), h('span', null, view.options[origIdx]));
         optButtons.push(b); optionsEl.appendChild(b);
       });
       card.append(optionsEl);
+      if (s.preset.skip && s.total - s.results.length > 1) {
+        card.append(h('button', { class: 'btn btn-ghost btn-block skip-btn', type: 'button', id: 'skip-btn', onClick: () => { if (!locked && s.skip(Date.now())) draw(); } }, 'Παράλειψη — θα ξαναέρθει στο τέλος'));
+      }
     }
     root.append(top, prog, bar, card);
 
@@ -122,8 +130,10 @@ export function renderSession(ctx) {
         h('div', { class: 'verdict' }, res.ok ? `Σωστό ✓ ${praise(res.ms, combo)}` : (origIdx === null ? 'Τέλος χρόνου ✗' : 'Λάθος ✗')),
         h('div', { class: 'small muted' }, `${fmtMs(res.ms)} · επίπεδο ${st ? st.level : 0}/5${st && st.bin ? ' · στα λάθη σου' : ''}${!res.ok && levelBefore > (st ? st.level : 0) ? ` · έπεσε από ${levelBefore}` : ''}`),
         leveled ? h('div', { class: 'levelup' }, `▲ Επίπεδο ${st.level}/5${st.level === 5 ? ' — κορυφή' : ''}`) : null,
-        !res.ok ? h('div', { class: 'small' }, `Σωστή: ${LETTERS[order.indexOf(q.correct)]}. ${q.options[q.correct]}`) : null,
+        !res.ok ? h('div', { class: 'small' }, `Σωστή: ${LETTERS[order.indexOf(q.correct)]}. ${view.options[q.correct]}`) : null,
         q.explanation ? h('div', { class: 'explain' }, q.explanation) : null,
+        view.hasAlt ? altWording(q, view.exam) : null,
+        (q.twins || []).length ? twinNote(ctx, q) : null,
         conf.length && !res.ok ? h('div', { class: 'small warn' }, 'Την μπερδεύεις με ' + conf.map((c) => `${c.id}`).join(', ')) : null,
         h('div', { class: 'session-actions' }, h('button', { class: 'btn btn-primary btn-block', type: 'button', id: 'next-btn', onClick: () => { if (s.ended) finish(); else draw(); } }, s.ended ? 'Αποτελέσματα' : 'Επόμενη')),
       );
@@ -145,6 +155,34 @@ export function renderSession(ctx) {
   draw();
   setTimeout(() => root.focus(), 0);
   return root;
+}
+
+// The other wording of a question that the exam computer phrases differently from the booklet.
+export function altWording(q, shownExam) {
+  const other = shownExam ? { text: q.text, options: q.options } : q.exam;
+  const label = shownExam ? 'Στο βιβλίο' : 'Στις εξετάσεις';
+  return h('div', { class: 'small alt-wording' }, h('b', null, `${label}: `),
+    other.text && other.text !== q.text ? `«${other.text}» — ` : '',
+    `σωστή «${other.options[q.correct]}»`);
+}
+
+function twinNote(ctx, q) {
+  const byId = new Map(ctx.questions.map((x) => [x.id, x]));
+  const others = q.twins.map((id) => byId.get(id)).filter((x) => x && (x.tier === 'booklet' || ctx.progress.settings.includeArchive));
+  if (!others.length) return null;
+  return h('div', { class: 'small twin-note' }, h('b', null, '⚠ Δίδυμη: '), 'μοιάζει με ',
+    others.map((x, i) => [i ? ', ' : '', h('a', { href: `#/q/${x.id}` }, `#${x.id}`), ` (σωστή «${x.options[x.correct]}»)`]),
+    '. Διάβασε όλες τις επιλογές πριν απαντήσεις.');
+}
+
+// «Πρακτικό εξέτασης»: like the printed record handed out after the real exam.
+function examSheet(sum) {
+  if (!sum.sheet) return null;
+  return h('div', { class: 'card exam-sheet' }, h('h3', null, 'Πρακτικό εξέτασης'),
+    h('ol', null, sum.sheet.map((r) => h('li', { class: r.ok ? 'ok-row' : 'bad-row' },
+      h('div', { class: 'q' }, h('a', { href: `#/q/${r.qid}` }, r.text)),
+      h('div', { class: 'small' }, r.answered ? (r.chosen === null ? 'Χωρίς απάντηση (τέλος χρόνου)' : `Απάντησες: ${r.chosen}`) : 'Χωρίς απάντηση', ' ', h('b', { class: r.ok ? 'ok' : 'bad' }, r.ok ? '✓' : '✗')),
+      r.ok ? null : h('div', { class: 'small ok' }, `Σωστή: ${r.correct}`)))));
 }
 
 export function renderSummary(ctx) {
@@ -189,10 +227,12 @@ export function renderSummary(ctx) {
       sum.endReason === 'time' ? h('p', { class: 'bad' }, 'Έληξε ο χρόνος.') : null,
       sum.endReason === 'abort' ? h('p', { class: 'muted' }, 'Σταμάτησες το τεστ πριν τελειώσει.') : null,
       sum.completed && sum.mode === MODES.due ? h('p', { class: 'ok' }, 'Η σημερινή εξάσκηση ολοκληρώθηκε ✓') : null,
-      sum.completed && (sum.mode === MODES.tomorrow || sum.mode === MODES.wrong || sum.mode === MODES.marathon) ? h('p', { class: 'ok' }, 'Τα καθάρισες όλα ✓') : null,
+      sum.completed && [MODES.tomorrow, MODES.wrong, MODES.marathon, MODES.proof, MODES.morning].includes(sum.mode) ? h('p', { class: 'ok' }, 'Τα καθάρισες όλα ✓') : null,
       sum.mode === MODES.ptest && !sum.passed && sum.endReason === 'done' ? h('p', { class: 'muted small' }, 'Το τεστ περνάει μόνο με 100 %. Ξαναδοκίμασέ το μέχρι να το καθαρίσεις.') : null,
+      sum.skipped ? h('p', { class: 'muted small' }, `Παραλείψεις: ${sum.skipped}`) : null,
       deltas),
-    wrongs.length ? h('div', { class: 'card' }, h('h3', null, 'Λάθη'), h('div', { class: 'list' }, wrongs.map((id) => { const q = byId.get(id); return h('a', { class: 'qrow', href: `#/q/${id}` }, h('span', { class: 'id' }, `#${id}`), h('span', { class: 'txt' }, q ? q.text : '')); }))) : null,
+    examSheet(sum),
+    wrongs.length && !sum.sheet ? h('div', { class: 'card' }, h('h3', null, 'Λάθη'), h('div', { class: 'list' }, wrongs.map((id) => { const q = byId.get(id); return h('a', { class: 'qrow', href: `#/q/${id}` }, h('span', { class: 'id' }, `#${id}`), h('span', { class: 'txt' }, q ? q.text : '')); }))) : null,
     h('div', { style: { margin: '10px 0' } }, continueBtn),
     h('div', { class: 'btn-row' }, h('a', { class: 'btn', href: '#/' }, 'Αρχική'), again),
   ]);

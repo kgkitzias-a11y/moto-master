@@ -147,6 +147,63 @@ export function numbers(pool, rnd = Math.random) {
   return shuffleArray(pool.filter((q) => NUM_RE.test(q.text) || q.options.some((o) => NUM_RE.test(o))).map((q) => q.id), rnd);
 }
 
+// ---------- exam-faithful additions (v1.6) ----------
+import { isProven } from './chance.js';
+
+// The real questionnaire: one random question from each official group 1–10, shown in a random
+// order. Data without groups (synthetic fixtures) falls back to `count` random questions.
+export function examByGroups(pool, count = RULES.EXAM_QUESTIONS, rnd = Math.random) {
+  const groups = new Map();
+  for (const q of pool) if (Number.isInteger(q.group)) {
+    if (!groups.has(q.group)) groups.set(q.group, []);
+    groups.get(q.group).push(q.id);
+  }
+  if (groups.size < count) return random(pool, count, rnd);
+  const keys = [...groups.keys()].sort((a, b) => a - b).slice(0, count);
+  return shuffleArray(keys.map((g) => { const ids = groups.get(g); return ids[Math.floor(rnd() * ids.length)]; }), rnd);
+}
+
+// Look-alike sets (q.twins) served back to back so the differences stand out.
+export function twinSets(pool) {
+  const ids = new Set(pool.map((q) => q.id));
+  const byId = new Map(pool.map((q) => [q.id, q]));
+  const seen = new Set();
+  const sets = [];
+  for (const q of pool) {
+    if (seen.has(q.id) || !(q.twins || []).some((id) => ids.has(id))) continue;
+    const set = [];
+    const stack = [q.id];
+    while (stack.length) {
+      const id = stack.pop();
+      if (seen.has(id) || !ids.has(id)) continue;
+      seen.add(id); set.push(id);
+      for (const t of byId.get(id).twins || []) if (!seen.has(t)) stack.push(t);
+    }
+    if (set.length > 1) sets.push(set.sort((a, b) => a - b));
+  }
+  return sets;
+}
+
+export function twins(pool, rnd = Math.random) {
+  return shuffleArray(twinSets(pool), rnd).flatMap((set) => shuffleArray(set, rnd));
+}
+
+// «Τελικός έλεγχος»: booklet questions not answered correctly within the last 48 h
+// (twice in a row when ever missed). Weakest first is not needed: every one must be cleared.
+export function proof(pool, state, now, rnd = Math.random) {
+  return shuffleArray(pool.filter((q) => q.tier === 'booklet' && !isProven(state.q[q.id], now)).map((q) => q.id), rnd);
+}
+
+// Exam morning: every question ever missed, then the look-alike sets, then numbers.
+export function morning(pool, state, rnd = Math.random) {
+  const out = [];
+  const add = (id) => { if (!out.includes(id)) out.push(id); };
+  shuffleArray(pool.filter((q) => { const s = state.q[q.id]; return s && s.wrong > 0; }).map((q) => q.id), rnd).forEach(add);
+  twins(pool, rnd).forEach(add);
+  numbers(pool, rnd).forEach(add);
+  return out;
+}
+
 // Continue toward today's goal, including a final batch smaller than five.
 export function towardGoal(pool, state, now, remaining, rnd = Math.random) {
   const order = dueToday(pool, state, now, rnd);

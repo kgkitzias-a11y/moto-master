@@ -124,7 +124,8 @@ p { margin: 6px 0; }
 .qcard.flash-ok { animation: flash-ok .45s ease-out; } .qcard.flash-bad { animation: shake .4s cubic-bezier(.36,.07,.19,.97); }
 @keyframes flash-ok { 0% { box-shadow: 0 0 0 0 rgba(46,227,106,.55); } 100% { box-shadow: 0 0 0 18px rgba(46,227,106,0); } }
 @keyframes shake { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(3px); } 30%,50%,70% { transform: translateX(-5px); } 40%,60% { transform: translateX(5px); } }
-.qid { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: flex; justify-content: space-between; }
+.qid { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: flex; justify-content: space-between; gap: 4px; flex-wrap: wrap; }
+.qid[hidden] { display: none; }
 .qtext { font-size: 20px; font-weight: 700; line-height: 1.35; margin-bottom: 14px; letter-spacing: -.2px; }
 .qimg { display: block; max-width: 100%; max-height: 240px; margin: 0 auto 12px; border-radius: 10px; background: #fff; }
 .conf { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
@@ -198,3 +199,31 @@ details summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .study-plan h3 { margin: 0; }
 .plan-details p { margin: 10px 0 0; }
 .study-plan input[type="date"] { width: 100%; min-width: 0; box-sizing: border-box; }
+
+/* ---------- v1.6: final stretch, exam realism, cards ---------- */
+.final-stretch { border-left: 5px solid var(--accent); }
+.final-stretch .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 700; }
+.final-stretch .kpis { grid-template-columns: repeat(2, 1fr); }
+.kpi.good { border-color: var(--ok); } .kpi.good .v { color: var(--ok); }
+.steps { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.steps li { display: flex; gap: 10px; align-items: center; padding: 10px 12px; background: var(--card2); border: 1px solid var(--line); border-radius: 12px; }
+.steps li.done { border-color: var(--ok); } .steps li.done b { color: var(--ok); }
+.steps .step-main { flex: 1; min-width: 0; }
+.skip-btn { margin-top: 10px; font-size: 14px; }
+.alt-wording { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--info) 12%, transparent); border: 1px solid color-mix(in srgb, var(--info) 45%, transparent); font-size: 14px; }
+.twin-note { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: color-mix(in srgb, var(--warn) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); }
+.tag.exam-tag { color: var(--info); border-color: var(--info); } .tag.twin-tag { color: var(--warn); border-color: var(--warn); }
+.exam-sheet ol { margin: 6px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
+.exam-sheet li .q a { color: var(--fg); font-weight: 600; }
+.exam-sheet li.bad-row::marker { color: var(--bad); } .exam-sheet li.ok-row::marker { color: var(--ok); }
+.cards-page .qa { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.cards-page .qa:last-child { border-bottom: 0; }
+.cards-page .qa .q { font-weight: 600; } .cards-page .qa .a { color: var(--ok); margin-top: 2px; }
+.cards-page .qa .id { color: var(--accent2); font-weight: 800; margin-right: 6px; font-variant-numeric: tabular-nums; }
+.cards-page section { scroll-margin-top: 60px; }
+.twin-set { padding: 4px 10px; margin: 8px 0; border-left: 3px solid var(--warn); background: var(--card2); border-radius: 8px; }
+.speed-table th, .speed-table td { text-align: center; padding: 8px 4px; }
+.speed-table tbody th { text-align: left; font-weight: 600; }
+.speed-table td { white-space: nowrap; }
+.speed-table td a { font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
+.tips { margin: 4px 0; padding-left: 20px; } .tips li { margin: 6px 0; }

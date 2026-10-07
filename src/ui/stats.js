@@ -3,6 +3,8 @@ import { readiness, categoryStats, weakList, dueStreak, isSolid, inBin } from '.
 import { median } from '../engine/time.js';
 import { modeMeta } from './modes.js';
 import { readinessCard } from './home.js';
+import { groupChances } from '../engine/chance.js';
+import { fmtChance } from './final.js';
 
 export function levelDots(level) {
   return h('span', { class: 'level', title: `επίπεδο ${level}/5` }, [0, 1, 2, 3, 4].map((i) => h('i', { class: i < level ? 'on' : '' })));
@@ -46,6 +48,7 @@ export function renderStats(ctx) {
       h('div', { class: 'row' }, levels.map((n, l) => h('span', { class: 'tag' }, `L${l}: ${n}`))),
     ),
     readinessCard(ctx),
+    groupTable(ctx),
     h('h2', null, 'Ανά κατηγορία'),
     h('div', { class: 'card tight' }, h('table', null,
       h('thead', null, h('tr', null, h('th', null, 'Κατηγορία'), h('th', null, 'Ερ.'), h('th', null, 'Ακρίβεια'), h('th', null, 'Εμπεδωμένες'), h('th', null, 'Αδύναμες'))),
@@ -67,6 +70,23 @@ export function renderStats(ctx) {
     sessions.length ? h('div', { class: 'card tight' }, h('table', null, h('thead', null, h('tr', null, h('th', null, 'Πότε'), h('th', null, 'Είδος τεστ'), h('th', null, 'Σκορ'), h('th', null, 'Χρόνος'))),
       h('tbody', null, sessions.map((s) => { const m = modeMeta(s.mode); return h('tr', null, h('td', null, fmtDate(s.t)), h('td', null, m ? m.title : s.mode), h('td', null, `${s.correct}/${s.total}`), h('td', null, fmtClock(s.durationMs))); })))) : h('p', { class: 'muted' }, 'Κανένα τεστ ακόμα.'),
   );
+}
+
+// The exam draws one question from each official group, so a weak group costs a whole question.
+function groupTable(ctx) {
+  const st = ctx.progress.state;
+  const groups = groupChances(st, ctx.questions, Date.now());
+  if (!groups.length) return null;
+  const booklet = ctx.questions.filter((q) => q.tier === 'booklet');
+  return h('div', null, h('h2', null, 'Ανά ομάδα εξετάσεων'),
+    h('p', { class: 'small muted' }, 'Στις εξετάσεις πέφτει μία ερώτηση από κάθε ομάδα.'),
+    h('div', { class: 'card tight' }, h('table', { id: 'group-table' },
+      h('thead', null, h('tr', null, h('th', null, 'Ομάδα'), h('th', null, 'Ερ.'), h('th', null, 'Είδες'), h('th', null, 'Εκτίμηση'))),
+      h('tbody', null, groups.map((g) => {
+        const qs = booklet.filter((q) => q.group === g.group);
+        const seen = qs.filter((q) => st.q[q.id] && st.q[q.id].seen).length;
+        return h('tr', null, h('td', null, g.group), h('td', null, g.size), h('td', null, `${seen}/${qs.length}`), h('td', { class: g.p < 0.97 ? 'warn' : 'ok' }, fmtChance(g.p)));
+      })))));
 }
 
 export { sparkline };

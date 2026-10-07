@@ -81,3 +81,13 @@ Official: ΥΑ 50984/7947/2013 (Β' 3056) άρθ. 22, as replaced by ΥΑ Δ30/�
 - `data/questions.json` — 159 questions (`id, tier, text, options[], correct, image, image_source, category, explanation, explanation_generated, similar[], sources{photo,page,key,mark | archive[]}`), plus `meta`.
 - `data/photos_manifest.json` — the 19 photo filenames, sizes and sha256.
 - `work/` (git-ignored): normalised pages, both transcription passes, the diff, the third-pass verdicts, the recovery report with the full PDF parse, the exam-format research.
+
+## 11. Re-check 2026-10-07 (v1.6)
+
+**Photos vs app.** The 19 booklet photos were re-read blind by five independent passes (transcribe first, then compare character by character, zoomed crops at every difference). Result: **140/140 questions identical** in text, options, order and ticked answer; answer-key table 140/140 = app `correct`; ids 18 and 79 are empty key cells. Only cosmetic print quirks (Q19 stray tonos, Q31/Q138 double spaces, Q95 superscript zero). Note: `work/pages/photo03_L/_R.png` are upside down and swapped (wrong rotation in `work/pages/manifest.json`); the dataset was not affected.
+
+**Official exam database.** `ExerBase.mdb` (TestDrive, yme.gr, 2009-05-27), Ερωτηματολόγιο 2, Greek: 145 questions, 5 retired (old Q7, Q31, Q55 with 70/120/70 km/h; deleted Q18, Q79). Active 140 = booklet ids exactly; answer keys 140/140; option order 140/140. Groups 1–10 sizes 15/13/13/14/14/15/15/14/15/12; exam = one per group, 15′. Wording differences (stored as `q.exam`): Q44, Q77, Q145, Q169, Q170 (meaningful), Q16, Q42, Q127, Q158 (spelling/punctuation). Q1 «To» and Q95 «180ο» are text-layer glyph artefacts and were ignored.
+
+**Driving-school mirrors** (drivepoint re-fetched 2026-10-07: same 142 questions as on 2026-09-14) still carry the deleted Q18/Q79 and, on some sites, the pre-2009 speed values; the Ministry database and the booklet agree with each other, not with those copies.
+
+**Explanations.** All 159 read; 31 replaced (`tools/data/explanations_v16.json`). No explanation argued for a wrong option.
