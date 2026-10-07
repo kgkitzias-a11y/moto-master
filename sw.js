@@ -1,5 +1,5 @@
 /* Moto Master service worker — versioned precache, cache-first, skipWaiting + clients.claim. */
-const VERSION = '1.7.0';
+const VERSION = '1.8.0';
 const CACHE = `moto-master-${VERSION}`;
 const PRECACHE = ["./","./index.html","./manifest.webmanifest","./src/app.js","./src/engine/chance.js","./src/engine/constants.js","./src/engine/events.js","./src/engine/planner.js","./src/engine/reducer.js","./src/engine/selection.js","./src/engine/session.js","./src/engine/shuffle.js","./src/engine/time.js","./src/store/db.js","./src/store/progress.js","./src/sync/gist.js","./src/sync/preferences.js","./src/ui/cards.js","./src/ui/certification.js","./src/ui/dom.js","./src/ui/final.js","./src/ui/fx.js","./src/ui/home.js","./src/ui/modes.js","./src/ui/planner.js","./src/ui/program.js","./src/ui/review.js","./src/ui/session.js","./src/ui/settings.js","./src/ui/setup.js","./src/ui/sheet.js","./src/ui/stats.js","./src/ui/styles.css","./src/vendor/jsQR.js","./src/vendor/qrcode.js","./src/version.js","./data/photos_manifest.json","./data/questions.json","./icons/apple-touch-icon-180.png","./icons/favicon-32.png","./icons/icon-192.png","./icons/icon-512-maskable.png","./icons/icon-512.png"];
 

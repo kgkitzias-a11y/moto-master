@@ -2,7 +2,7 @@ import { h } from './dom.js';
 import { MODES, RULES } from '../engine/constants.js';
 import { practiceSets } from '../engine/selection.js';
 import { readiness, inBin } from '../engine/reducer.js';
-import { passChance } from '../engine/chance.js';
+import { readinessNumbers } from '../engine/chance.js';
 import { fmtChance } from './final.js';
 
 // «Πρόγραμμα»: DMV Genie's ordered path (tests → marathon → simulator → challenge bank → ready),
@@ -34,7 +34,8 @@ export function programStages(ctx, now = Date.now()) {
     && ((x.mode === MODES.marathon && x.total >= booklet.length) || (x.mode === MODES.gauntlet139 && x.total === booklet.length)));
   const toClear = mistakesToClear(st, ctx.questions);
   const bin = booklet.filter((q) => inBin(st.q[q.id])).length;
-  const chance = passChance(st, ctx.questions, now);
+  const nums = readinessNumbers(st, ctx.questions, ctx.progress.settings, now);
+  const chance = nums.chance;
   const firstOpen = (from, to) => { for (let i = from; i < to; i++) if (!passed(i)) return i; return null; };
   const tests = (from, to) => ({ from, to, done: firstOpen(from, to) === null, next: firstOpen(from, to) });
   const t1 = tests(0, split), t2 = tests(split, sets.length);
@@ -51,7 +52,7 @@ export function programStages(ctx, now = Date.now()) {
         next: { label: 'Προσομοίωση', mode: MODES.exam, params: {} } },
       { id: 'mistakes', title: 'Καθάρισε τα λάθη σου', detail: toClear.length ? `${toClear.length} ερωτήσεις που έχεις χάσει θέλουν 2 σωστές στη σειρά.` : 'Κάθε ερώτηση που έχασες απαντήθηκε σωστά 2 φορές στη σειρά.', done: toClear.length === 0,
         next: bin ? { label: 'Επανάληψη λαθών', mode: MODES.wrong, params: {} } : { label: 'Όσες έχεις χάσει ποτέ', mode: MODES.morning, params: {} } },
-      { id: 'ready', title: `Έτοιμος: πιθανότητα ≥ ${fmtChance(RULES.PASS_TARGET)}`, detail: `Τώρα: ${fmtChance(chance)}.`, done: chance >= RULES.PASS_TARGET,
+      { id: 'ready', title: `Έτοιμος: πιθανότητα ≥ ${fmtChance(RULES.PASS_TARGET)}, καμία ερώτηση κάτω από ${fmtChance(RULES.PASS_FLOOR)}`, detail: `Στις εξετάσεις χωρίς άλλο διάβασμα: ${fmtChance(chance)} · πιο αδύναμη: ${fmtChance(nums.weakest)}.`, done: nums.ready,
         next: { label: 'Επιπλέον γύρος', mode: MODES.grind, params: {} } },
     ],
   };

@@ -3,7 +3,7 @@ import { readiness, categoryStats, weakList, dueStreak, isSolid, inBin } from '.
 import { median } from '../engine/time.js';
 import { modeMeta } from './modes.js';
 import { readinessCard } from './home.js';
-import { groupChances } from '../engine/chance.js';
+import { groupChances, examMoment } from '../engine/chance.js';
 import { fmtChance } from './final.js';
 
 export function levelDots(level) {
@@ -75,11 +75,11 @@ export function renderStats(ctx) {
 // The exam draws one question from each official group, so a weak group costs a whole question.
 function groupTable(ctx) {
   const st = ctx.progress.state;
-  const groups = groupChances(st, ctx.questions, Date.now());
+  const groups = groupChances(st, ctx.questions, examMoment(ctx.progress.settings, Date.now()));
   if (!groups.length) return null;
   const booklet = ctx.questions.filter((q) => q.tier === 'booklet');
   return h('div', null, h('h2', null, 'Ανά ομάδα εξετάσεων'),
-    h('p', { class: 'small muted' }, 'Στις εξετάσεις πέφτει μία ερώτηση από κάθε ομάδα.'),
+    h('p', { class: 'small muted' }, 'Στις εξετάσεις πέφτει μία ερώτηση από κάθε ομάδα. Η εκτίμηση είναι για τη στιγμή των εξετάσεων.'),
     h('div', { class: 'card tight' }, h('table', { id: 'group-table' },
       h('thead', null, h('tr', null, h('th', null, 'Ομάδα'), h('th', null, 'Ερ.'), h('th', null, 'Είδες'), h('th', null, 'Εκτίμηση'))),
       h('tbody', null, groups.map((g) => {

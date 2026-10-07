@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { reduce, emptyState } from '../../src/engine/reducer.js';
 import { examByGroups, twins, twinSets, proof, morning, grind } from '../../src/engine/selection.js';
-import { questionChance, atMostWrong, passChance, isProven, proofStatus, groupChances, P_UNSEEN, P_LAST_WRONG } from '../../src/engine/chance.js';
+import { questionChance, atMostWrong, passChance, isProven, proofStatus, groupChances, examMoment, readinessNumbers, memoryOf, MODEL } from '../../src/engine/chance.js';
 import { startSession, PRESETS } from '../../src/engine/session.js';
 import { MODES, RULES } from '../../src/engine/constants.js';
 import { genQuestions, T0, H, D, mulberry32, nextId } from './fixtures.js';
@@ -121,20 +121,48 @@ describe('v1.6 selection', () => {
   });
 });
 
-describe('v1.6 pass chance', () => {
-  test('questionChance: unseen, last wrong, and longer correct streaks', () => {
+describe('v1.8 pass chance: strict memory model', () => {
+  const q5 = byId.get(5);
+  test('unseen = blind guess (1 / options); self-graded answers do not count', () => {
     const now = T0 + D;
-    assert.equal(questionChance(undefined, now), P_UNSEEN);
-    const one = reduce([ev(5, T0, true)], QS).q[5];
-    const lastWrong = reduce([ev(5, T0, true), ev(5, T0 + H, false)], QS).q[5];
-    const three = reduce([ev(5, T0, true), ev(5, T0 + H, true), ev(5, T0 + 2 * H, true)], QS).q[5];
-    const spaced = reduce([ev(5, T0 - D, true), ev(5, T0 + H, true), ev(5, T0 + 2 * H, true)], QS).q[5];
-    assert.equal(questionChance(lastWrong, now), P_LAST_WRONG);
-    assert.ok(questionChance(one, now) < questionChance(three, now));
-    assert.ok(questionChance(three, now) < questionChance(spaced, now), 'a streak over two days counts more');
-    assert.ok(questionChance(three, T0 + 10 * D) < questionChance(three, now), 'not seen for days costs');
+    assert.equal(questionChance(undefined, now, q5), 1 / q5.options.length);
     const recall = reduce([ev(5, T0, true, { m: 'recall', rc: true, sh: false })], QS).q[5];
-    assert.equal(questionChance(recall, now), P_UNSEEN, 'self-graded answers do not count');
+    assert.equal(questionChance(recall, now, q5), 1 / q5.options.length);
+  });
+
+  test('a miss caps recall at 50 % until answered right again', () => {
+    const lastWrong = reduce([ev(5, T0, true), ev(5, T0 + H, false)], QS).q[5];
+    const g = 1 / q5.options.length;
+    assert.ok(questionChance(lastWrong, T0 + H + 60000, q5) <= 0.5 * (1 - MODEL.SLIP) + 0.5 * g + 1e-12);
+  });
+
+  test('forgetting: the same memory is weaker the later the exam', () => {
+    const s = reduce([ev(5, T0, true), ev(5, T0 + D, true)], QS).q[5];
+    const a = questionChance(s, T0 + D + H, q5), b = questionChance(s, T0 + 3 * D, q5), c = questionChance(s, T0 + 8 * D, q5);
+    assert.ok(a > b && b > c, `${a} > ${b} > ${c}`);
+  });
+
+  test('spacing: answers a day apart build more memory than answers a minute apart', () => {
+    const crammed = memoryOf(reduce([ev(5, T0, true), ev(5, T0 + 60000, true), ev(5, T0 + 120000, true)], QS).q[5]);
+    const spaced = memoryOf(reduce([ev(5, T0, true), ev(5, T0 + D, true), ev(5, T0 + 2 * D, true)], QS).q[5]);
+    assert.ok(crammed.S < 1.01, `crammed S ${crammed.S}`);
+    assert.ok(spaced.S > 2.5 * crammed.S, `spaced S ${spaced.S}`);
+  });
+
+  test('trust: a question ever missed stays below a never-missed one with the same right answers after it', () => {
+    const at = T0 + 3 * D;
+    const clean = reduce([ev(5, T0, true), ev(5, T0 + D, true), ev(5, T0 + 2 * D, true)], QS).q[5];
+    const missed = reduce([ev(5, T0 - H, false), ev(5, T0, true), ev(5, T0 + D, true), ev(5, T0 + 2 * D, true)], QS).q[5];
+    assert.ok(questionChance(missed, at, q5) < questionChance(clean, at, q5));
+  });
+
+  test('slip: even a perfectly known question stays below 100 %; look-alikes lower still', () => {
+    const events = [];
+    for (let i = 0; i < 12; i++) events.push(ev(5, T0 + i * D, true), ev(169, T0 + i * D, true));
+    const st = reduce(events, QS);
+    const at = T0 + 11 * D + H;
+    assert.ok(questionChance(st.q[5], at, q5) <= 1 - MODEL.SLIP + 1e-9);
+    assert.ok(questionChance(st.q[169], at, byId.get(169)) <= 1 - MODEL.TWIN_SLIP + 1e-9);
   });
 
   test('atMostWrong is the Poisson binomial tail', () => {
@@ -143,14 +171,30 @@ describe('v1.6 pass chance', () => {
     assert.ok(Math.abs(atMostWrong(new Array(10).fill(0.9), 1) - (0.9 ** 10 + 10 * 0.1 * 0.9 ** 9)) < 1e-12);
   });
 
-  test('passChance: nothing studied is far below target; every question solid on two days is above it', () => {
-    const now = T0 + 2 * D + 6 * H;
-    assert.ok(passChance(emptyState(), QS, now) < 0.01);
-    const events = [];
-    for (const q of BOOKLET) for (const t of [T0, T0 + D, T0 + 2 * D, T0 + 2 * D + H, T0 + 2 * D + 2 * H]) events.push(ev(q.id, t, true));
-    const st = reduce(events, QS);
-    assert.ok(passChance(st, QS, now) >= RULES.PASS_TARGET);
-    assert.equal(groupChances(st, QS, now).length, 10);
+  test('exam moment: 09:00 on the exam date, now once the exam day started, tomorrow without a date', () => {
+    const now = new Date(2026, 9, 7, 15, 0).getTime();
+    assert.equal(examMoment({ examDate: '2026-10-12' }, now), new Date(2026, 9, 12, 9, 0).getTime());
+    const examDayNoon = new Date(2026, 9, 12, 12, 0).getTime();
+    assert.equal(examMoment({ examDate: '2026-10-12' }, examDayNoon), examDayNoon);
+    assert.equal(examMoment({}, now), now + D);
+    assert.equal(examMoment({ examDate: '2026-10-01' }, now), now + D);
+  });
+
+  test('ready needs ≥ 99,5 % AND no question below 97 %: daily reviews alone fall short, a final morning review gets there', () => {
+    const exam = new Date(2026, 9, 12, 9, 0).getTime();
+    const at = (d, h) => new Date(2026, 9, d, h, 0).getTime();
+    const daily = [at(7, 20), at(8, 20), at(9, 20), at(10, 20), at(11, 20)];
+    const play = (times) => reduce(BOOKLET.flatMap((q) => times.map((t) => ev(q.id, t, true))), QS);
+    const settings = { examDate: '2026-10-12' };
+    const without = readinessNumbers(play(daily), QS, settings, at(11, 21));
+    assert.equal(without.ready, false, `no morning review: ${without.chance}`);
+    const withMorning = readinessNumbers(play([...daily, at(12, 7)]), QS, settings, at(12, 7) + 60000);
+    assert.equal(withMorning.at, exam);
+    assert.ok(withMorning.chance >= RULES.PASS_TARGET, `with morning review: ${withMorning.chance}`);
+    assert.ok(withMorning.weakest >= RULES.PASS_FLOOR);
+    assert.equal(withMorning.ready, true);
+    assert.ok(passChance(emptyState(), QS, exam) < 0.01);
+    assert.equal(groupChances(play(daily), QS, exam).length, 10);
   });
 });
 
@@ -234,13 +278,14 @@ describe('v1.6 exam sessions', () => {
 });
 
 describe('v1.7 keep grinding', () => {
-  test('correct answers in a row count only when at least an hour apart', () => {
+  test('cramming the same question adds (almost) nothing; spaced answers do', () => {
     const now = T0 + D;
+    const q6 = byId.get(6);
     const one = reduce([ev(6, T0, true)], QS).q[6];
     const crammed = reduce([ev(6, T0, true), ev(6, T0 + 60000, true), ev(6, T0 + 120000, true)], QS).q[6];
-    const spaced = reduce([ev(6, T0, true), ev(6, T0 + H, true), ev(6, T0 + 2 * H, true)], QS).q[6];
-    assert.equal(questionChance(crammed, now), questionChance(one, now));
-    assert.ok(questionChance(spaced, now) > questionChance(crammed, now));
+    const spaced = reduce([ev(6, T0 - 2 * D, true), ev(6, T0 - D, true), ev(6, T0, true)], QS).q[6];
+    assert.ok(Math.abs(questionChance(crammed, now, q6) - questionChance(one, now, q6)) < 0.002);
+    assert.ok(questionChance(spaced, now, q6) > questionChance(crammed, now, q6) + 0.02);
   });
 
   test('grind: weakest questions first (per group size), questions just answered right wait', () => {

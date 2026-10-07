@@ -6,6 +6,7 @@ import { RULES, MODES } from './constants.js';
 import { shuffleOptions, shuffleArray, uuid } from './shuffle.js';
 import * as sel from './selection.js';
 import { dueList } from './reducer.js';
+import { examMoment } from './chance.js';
 
 export const PRESETS = {
   [MODES.practice]:    { label: 'Ελεύθερη εξάσκηση', timerMs: null, perQuestionMs: null, shuffle: true, feedback: 'immediate', endRule: 'queue', loop: false },
@@ -80,7 +81,7 @@ export function buildQueue(mode, questions, state, settings, now, params = {}, r
     case MODES.twins: return sel.twins(pool, rnd);
     case MODES.proof: return sel.proof(pool, state, now, rnd);
     case MODES.morning: return sel.morning(pool, state, rnd);
-    case MODES.grind: return sel.grind(pool, state, now, params.count || RULES.GRIND_COUNT, rnd);
+    case MODES.grind: return sel.grind(pool, state, now, params.count || RULES.GRIND_COUNT, rnd, examMoment(settings, now));
     default: throw new Error(`unknown mode ${mode}`);
   }
 }

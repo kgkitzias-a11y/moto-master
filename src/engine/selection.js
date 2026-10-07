@@ -205,16 +205,16 @@ export function morning(pool, state, rnd = Math.random) {
 }
 
 // «Επιπλέον γύρος»: the booklet questions whose improvement lifts the pass chance most. A question
-// weighs (1 − its chance) / size of its official group, because the exam draws one per group.
-// Questions answered right within the last hour wait (another answer now would not count).
-export function grind(pool, state, now, count = RULES.GRIND_COUNT, rnd = Math.random) {
+// weighs (1 − its chance at the exam moment `at`) / size of its official group, because the exam
+// draws one per group. Questions answered right within the last hour wait (it would hardly count).
+export function grind(pool, state, now, count = RULES.GRIND_COUNT, rnd = Math.random, at = now) {
   const booklet = pool.filter((q) => q.tier === 'booklet');
   const sizes = new Map();
   for (const q of booklet) sizes.set(q.group, (sizes.get(q.group) || 0) + 1);
   const scored = booklet.map((q) => {
     const s = state.q[q.id];
     const fresh = !!(s && s.lastOk && s.lastT !== null && now - s.lastT < STREAK_GAP_MS);
-    return { id: q.id, fresh, gain: (1 - questionChance(s, now)) / (Number.isInteger(q.group) ? sizes.get(q.group) : 1), tie: rnd() };
+    return { id: q.id, fresh, gain: (1 - questionChance(s, at, q)) / (Number.isInteger(q.group) ? sizes.get(q.group) : 1), tie: rnd() };
   });
   scored.sort((a, b) => (a.fresh - b.fresh) || (b.gain - a.gain) || (a.tie - b.tie));
   return shuffleArray(scored.slice(0, count).map((x) => x.id), rnd);

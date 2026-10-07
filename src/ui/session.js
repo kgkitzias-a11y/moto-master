@@ -4,7 +4,7 @@ import { modeMeta } from './modes.js';
 import { startSession } from '../engine/session.js';
 import { confusions, isMastered } from '../engine/reducer.js';
 import { sfx, haptic, confetti, praise } from './fx.js';
-import { passChance } from '../engine/chance.js';
+import { passChance, examMoment } from '../engine/chance.js';
 import { fmtChance } from './final.js';
 import { practiceSets } from '../engine/selection.js';
 import { mistakesToClear } from './program.js';
@@ -21,7 +21,7 @@ export function renderSession(ctx) {
   let combo = 0, bestCombo = 0;
   const fxOn = { sound: ctx.progress.settings.sound !== false, haptics: ctx.progress.settings.haptics !== false };
   const masteredBefore = new Set(ctx.questions.filter((q) => isMastered(ctx.progress.state.q[q.id])).map((q) => q.id));
-  ctx._sessionFx = { combo: () => bestCombo, masteredBefore, chanceBefore: passChance(ctx.progress.state, ctx.questions, Date.now()) };
+  ctx._sessionFx = { combo: () => bestCombo, masteredBefore, chanceBefore: passChance(ctx.progress.state, ctx.questions, examMoment(ctx.progress.settings, Date.now())) };
 
   const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
   window.addEventListener('hashchange', function onLeave() { stop(); window.removeEventListener('hashchange', onLeave); if (!s.ended && location.hash !== '#/session') { s.abort(); finish({ navigate: false }); } });
@@ -230,7 +230,7 @@ export function renderSummary(ctx) {
     const i = sets.findIndex((_, k) => !(ctx.progress.state.ptests[k] && ctx.progress.state.ptests[k].passed));
     if (i >= 0) nextTest = h('button', { class: 'btn btn-primary btn-block', type: 'button', id: 'next-test', onClick: () => { ctx.session = startSession(MODES.ptest, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings, params: { set: i } }); ctx.navigate('#/session'); } }, `Επόμενο: Τεστ ${i + 1} ▶`);
   }
-  const chanceAfter = passChance(ctx.progress.state, ctx.questions, Date.now());
+  const chanceAfter = passChance(ctx.progress.state, ctx.questions, examMoment(ctx.progress.settings, Date.now()));
   const chanceDelta = fx.chanceBefore === null ? null : chanceAfter - fx.chanceBefore;
   const chanceLine = h('p', { class: 'chance-line', id: 'chance-line' }, 'Πιθανότητα επιτυχίας: ',
     fx.chanceBefore !== null ? [fmtChance(fx.chanceBefore), ' → '] : null, h('b', null, fmtChance(chanceAfter)),

@@ -1,8 +1,8 @@
 import { h, fmtDate } from './dom.js';
 import { readiness, isMastered, isSolid } from '../engine/reducer.js';
 import { RULES } from '../engine/constants.js';
-import { passChance, groupChances, riskiest, proofStatus } from '../engine/chance.js';
-import { fmtChance } from './final.js';
+import { groupChances, riskiest, proofStatus, readinessNumbers, MODEL } from '../engine/chance.js';
+import { fmtChance, momentLabel } from './final.js';
 
 export function renderCertification(ctx) {
   const st = ctx.progress.state;
@@ -20,16 +20,30 @@ export function renderCertification(ctx) {
     { ok: r.hardOk, title: `${r.hardNeeded} τέλειες «Σκληρές προσομοιώσεις» (${RULES.EXAM_QUESTIONS}/${RULES.EXAM_QUESTIONS} σε ${RULES.HARD_EXAM_TIME_MS / 60000}′)`, detail: `Τώρα: ${r.hardPerfect} τέλειες από ${st.hardMocks.length} προσπάθειες.` },
   ];
   const now = Date.now();
-  const chance = passChance(st, ctx.questions, now);
-  const groups = groupChances(st, ctx.questions, now);
-  const risky = riskiest(st, ctx.questions, now).slice(0, 25);
+  const nums = readinessNumbers(st, ctx.questions, ctx.progress.settings, now);
+  const chance = nums.chance;
+  const groups = groupChances(st, ctx.questions, nums.at);
+  const risky = riskiest(st, ctx.questions, nums.at).slice(0, 25);
+  const pct = (x) => `${(x * 100).toLocaleString('el-GR')} %`;
   const proof = proofStatus(st, ctx.questions, now);
   const byId = new Map(ctx.questions.map((q) => [q.id, q]));
-  const chanceCard = h('div', { class: `card ${chance >= RULES.PASS_TARGET ? 'readiness ready' : ''}`, id: 'chance-card' },
-    h('div', { class: 'row between' }, h('b', null, 'Πιθανότητα επιτυχίας'), h('span', { class: `big ${chance >= RULES.PASS_TARGET ? 'ok' : ''}` }, fmtChance(chance))),
-    h('p', { class: 'small muted' }, `Εκτίμηση: για κάθε ερώτηση μετράμε πόσες φορές στη σειρά την απάντησες σωστά (με μπόνους όταν είναι σε διαφορετικές μέρες και ποινή όταν έχεις να τη δεις πάνω από 3 μέρες). Οι εξετάσεις παίρνουν μία ερώτηση από κάθε ομάδα· υπολογίζουμε την πιθανότητα για το πολύ ${RULES.EXAM_MAX_WRONG} λάθος. Στόχος: ≥ ${fmtChance(RULES.PASS_TARGET)}.`),
+  const chanceCard = h('div', { class: `card ${nums.ready ? 'readiness ready' : ''}`, id: 'chance-card' },
+    h('div', { class: 'row between' }, h('b', null, 'Πιθανότητα επιτυχίας'), h('span', { class: `big ${nums.ready ? 'ok' : ''}` }, fmtChance(chance))),
+    h('p', { class: 'small' }, `${momentLabel(ctx.progress.settings, nums.at, now)[0].toUpperCase()}${momentLabel(ctx.progress.settings, nums.at, now).slice(1)}. Αν έδινες τώρα: ${fmtChance(nums.nowChance)}. Πιο αδύναμη ερώτηση: ${fmtChance(nums.weakest)}.`),
+    h('p', { class: 'small', id: 'ready-rule' }, nums.ready ? h('b', { class: 'ok' }, 'ΕΤΟΙΜΟΣ ✓ ') : null,
+      `Έτοιμος σημαίνει: πιθανότητα ≥ ${fmtChance(RULES.PASS_TARGET)} (το πολύ 1 στις 200 να κοπείς) και καμία ερώτηση κάτω από ${fmtChance(RULES.PASS_FLOOR)}.`),
+    h('details', { id: 'model-explain' }, h('summary', null, 'Πώς υπολογίζεται'),
+      h('ul', { class: 'tips small' },
+        h('li', null, 'Μοντέλο μνήμης (απλοποιημένο FSRS, όπως στο Anki): για κάθε ερώτηση υπολογίζουμε πόσο σταθερά τη θυμάσαι και πόσο θα την ξεχάσεις μέχρι τη στιγμή των εξετάσεων.'),
+        h('li', null, 'Μια σωστή απάντηση ενισχύει τη μνήμη τόσο περισσότερο, όσο περισσότερο είχε αρχίσει να ξεθωριάζει. Η ίδια ερώτηση ξανά μετά από ένα λεπτό σχεδόν δεν μετράει.'),
+        h('li', null, 'Ένα λάθος ρίχνει τη σταθερότητα στο 1/5· μέχρι να την απαντήσεις ξανά σωστά, μετράει το πολύ 50 %. Κάθε παλιό λάθος κοστίζει 10 % εμπιστοσύνης, που επανέρχεται με σωστές απαντήσεις σε απόσταση τουλάχιστον μίας ώρας.'),
+        h('li', null, `Ακόμα κι αν την ξέρεις: ${pct(MODEL.SLIP)} πιθανότητα να διαβάσεις ή να πατήσεις λάθος (${pct(MODEL.TWIN_SLIP)} στις δίδυμες). Αν την έχεις ξεχάσει: τύχη στα τυφλά (1 στις 3–5, ανάλογα με τις επιλογές).`),
+        h('li', null, `Ερώτηση που δεν έχεις δει: μόνο τύχη. Οι απαντήσεις «Από μνήμης» δεν μετράνε.`),
+        h('li', null, `Οι εξετάσεις παίρνουν μία ερώτηση από κάθε ομάδα· υπολογίζουμε ακριβώς την πιθανότητα για το πολύ ${RULES.EXAM_MAX_WRONG} λάθος στις ${RULES.EXAM_QUESTIONS}.`),
+        h('li', null, 'Ελέγχθηκε στις δικές σου απαντήσεις: σε κάθε εύρος, το μοντέλο προβλέπει λιγότερες σωστές από όσες έκανες στην πράξη.'),
+        h('li', null, 'Δεν μπορεί να προβλέψει αρρώστια, άγχος ή κάτι απρόβλεπτο.'))),
     groups.length ? h('table', null, h('thead', null, h('tr', null, h('th', null, 'Ομάδα'), h('th', null, 'Ερωτήσεις'), h('th', null, 'Πιθανότητα σωστής'))),
-      h('tbody', null, groups.map((g) => h('tr', null, h('td', null, g.group), h('td', null, g.size), h('td', { class: g.p < 0.97 ? 'warn' : 'ok' }, fmtChance(g.p)))))) : null,
+      h('tbody', null, groups.map((g) => h('tr', null, h('td', null, g.group), h('td', null, g.size), h('td', { class: g.p < RULES.PASS_FLOOR ? 'warn' : 'ok' }, fmtChance(g.p)))))) : null,
     risky.length ? h('details', null, h('summary', null, `Ερωτήσεις που ρίχνουν την πιθανότητα (${risky.length})`),
       h('div', { class: 'list' }, risky.map((x) => { const q = byId.get(x.id); return h('a', { class: 'qrow', href: `#/q/${x.id}` }, h('span', { class: 'id' }, `#${x.id}`), h('span', { class: 'txt' }, q.text), h('span', { class: 'small muted' }, fmtChance(x.p))); }))) : null);
   const proofCard = h('div', { class: `card ${proof.done === proof.total ? 'readiness ready' : ''}`, id: 'proof-card' },

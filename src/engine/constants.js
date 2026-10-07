@@ -27,7 +27,8 @@ export const RULES = Object.freeze({
   READY_HARD_EXAMS: 3,                     // readiness also needs 3 perfect hard simulators
   HARDEST_COUNT: 20,
   PROOF_WINDOW_MS: 48 * 60 * 60 * 1000,    // «Τελικός έλεγχος»: last answer correct within 48 h
-  PASS_TARGET: 0.995,                      // pass-chance target shown next to the readiness gate
+  PASS_TARGET: 0.995,                      // pass-chance target at the exam moment (≤ 1 failure in 200)
+  PASS_FLOOR: 0.97,                        // …and no single booklet question below 97 % (no weak spot)
   GRIND_COUNT: 20,                         // questions per «Επιπλέον γύρος»
 });
 

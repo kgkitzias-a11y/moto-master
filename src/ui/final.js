@@ -1,6 +1,6 @@
 import { h } from './dom.js';
 import { MODES, RULES } from '../engine/constants.js';
-import { passChance, proofStatus } from '../engine/chance.js';
+import { readinessNumbers, proofStatus } from '../engine/chance.js';
 import { dayKey } from '../engine/time.js';
 
 // "97,3 %" in Greek notation; never shows 100 % for an estimate below 1.
@@ -8,6 +8,17 @@ export function fmtChance(p) {
   const pct = p * 100;
   if (pct >= 99.95 && p < 1) return '>99,9 %';
   return `${pct.toLocaleString('el-GR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
+}
+
+// "Δευ 12/10, 09:00"
+export function fmtMoment(t) {
+  return new Intl.DateTimeFormat('el-GR', { weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(t));
+}
+
+// Label for the moment the pass chance is computed for.
+export function momentLabel(settings, at, now = Date.now()) {
+  return settings && settings.examDate && at - now < 30 * 86400000 && at - now !== 86400000
+    ? `στις εξετάσεις (${fmtMoment(at)}) αν δεν ξαναδιαβάσεις` : 'αν έδινες αύριο, χωρίς άλλο διάβασμα';
 }
 
 // «Τελική ευθεία»: one guided list of today's steps, chosen by the days left to the exam.
@@ -20,7 +31,8 @@ export function finalStretchCard(ctx, start) {
   const todays = st.sessions.filter((x) => dayKey(x.t) === today);
   const completed = (mode) => todays.some((x) => x.mode === mode && x.x && x.x.completed);
   const perfectExams = todays.filter((x) => x.mode === MODES.exam && x.total === RULES.EXAM_QUESTIONS && x.correct === x.total).length;
-  const chance = passChance(st, ctx.questions, now);
+  const nums = readinessNumbers(st, ctx.questions, p.settings, now);
+  const chance = nums.chance;
   const proof = proofStatus(st, ctx.questions, now);
   const goalParams = plan.automatic ? { plannedIds: plan.queue } : { remaining: plan.remaining };
 
@@ -50,15 +62,18 @@ export function finalStretchCard(ctx, start) {
   }
   const next = steps.find((s) => !s.done && s.run);
   const allDone = !next;
-  const ok = chance >= RULES.PASS_TARGET;
+  const ok = nums.ready;
   return h('section', { class: 'card final-stretch', id: 'final-stretch', 'aria-label': 'Τελική ευθεία' },
     h('div', { class: 'row between' }, h('div', { style: { flex: 1, minWidth: 0 } }, h('div', { class: 'eyebrow' }, phase), h('h3', { style: { margin: '2px 0 0' } }, 'Τελική ευθεία')),
       h('a', { class: 'btn btn-sm', href: '#/certification' }, 'Ετοιμότητα')),
     h('div', { class: 'kpis', style: { marginTop: '10px' } },
-      h('div', { class: `kpi ${ok ? 'good' : ''}`, id: 'pass-chance', title: 'Εκτίμηση από τις πρόσφατες απαντήσεις σου σε κάθε ερώτηση' },
-        h('div', { class: 'v' }, fmtChance(chance)), h('div', { class: 'l' }, `πιθανότητα επιτυχίας (στόχος ≥ ${fmtChance(RULES.PASS_TARGET)})`)),
+      h('div', { class: `kpi ${ok ? 'good' : ''}`, id: 'pass-chance', title: 'Μοντέλο μνήμης: πόσο θα θυμάσαι κάθε ερώτηση τη στιγμή των εξετάσεων' },
+        h('div', { class: 'v' }, fmtChance(chance)), h('div', { class: 'l' }, `πιθανότητα επιτυχίας ${momentLabel(p.settings, nums.at, now)}`)),
       h('div', { class: `kpi ${proof.done === proof.total ? 'good' : ''}`, id: 'proof-count' },
         h('div', { class: 'v' }, `${proof.done}/${proof.total}`), h('div', { class: 'l' }, 'σωστές τις τελευταίες 48 ώρες'))),
+    h('p', { class: 'small muted', id: 'chance-detail', style: { margin: '8px 0 0' } },
+      `Αν έδινες τώρα: ${fmtChance(nums.nowChance)} · πιο αδύναμη ερώτηση: ${fmtChance(nums.weakest)}. `,
+      ok ? h('b', { class: 'ok' }, 'ΕΤΟΙΜΟΣ ✓') : `Έτοιμος: ≥ ${fmtChance(RULES.PASS_TARGET)} και καμία ερώτηση κάτω από ${fmtChance(RULES.PASS_FLOOR)}.`),
     h('ol', { class: 'steps' }, steps.map((s) => h('li', { class: s.done ? 'done' : '', dataset: { step: s.id } },
       h('div', { class: 'step-main' }, h('b', null, `${s.done ? '✓ ' : ''}${s.label}`), h('div', { class: 'small muted' }, s.detail)),
       s.href ? h('a', { class: 'btn btn-sm', href: s.href }, 'Άνοιξε')
