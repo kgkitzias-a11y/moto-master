@@ -252,3 +252,90 @@ details summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 
 /* ---------- v1.9: exam time next to the date ---------- */
 .plan-when { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 8px; align-items: end; }
+
+/* Test-first study flow, based on the publicly visible Genie screen structure. */
+:root { --accent: #3478f6; --accent2: #8bb4ff; --accent-ink: #fff; --radius: 18px; }
+:root[data-theme="light"] { --accent: #2164e8; --accent2: #1853c7; --card2: #f3f4fa; --bg: #f5f6fa; }
+.btn-primary { background: #2164e8; border-color: #2164e8; color: #fff; box-shadow: 0 4px 12px rgba(33,100,232,.16); }
+.view:has(.study-home) { max-width: 1120px; }
+.study-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0 8px; }
+.study-heading h1 { font-size: clamp(25px, 3vw, 34px); letter-spacing: -.8px; margin: 4px 0; }
+.eyebrow { font-size: 11px; letter-spacing: .1em; color: var(--muted); font-weight: 800; }
+.exam-ticket { display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; border: 1px solid var(--line); background: var(--card); border-radius: 14px; color: var(--fg); }
+.exam-ticket span { color: var(--muted); font-size: 11px; }
+.exam-ticket b { font-size: 14px; }
+.study-overview, .study-roadmap { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+.study-overview > *, .study-roadmap > * { min-width: 0; }
+.study-overview > .card { height: calc(100% - 20px); }
+.practice-meter { padding: 22px; }
+.practice-meter h2 { font-size: 19px; margin: 6px 0 12px; }
+.meter-number { font-size: 36px; letter-spacing: -1.4px; font-variant-numeric: tabular-nums; }
+.readiness-track { height: 14px; border-radius: 8px; background: var(--card2); overflow: hidden; margin: 8px 0 12px; }
+.readiness-track > div { height: 100%; background: #45d99b; border-radius: inherit; transition: width .3s; }
+.meter-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 15px 0 8px; }
+.meter-facts div { display: flex; flex-direction: column; gap: 4px; }
+.meter-facts b { font-size: 23px; font-variant-numeric: tabular-nums; }
+.meter-facts span { font-size: 12px; color: var(--muted); }
+.score-explanation { margin: 13px 0; border-top: 1px solid var(--line); padding-top: 10px; }
+.score-explanation summary { font-size: 13px; color: var(--accent2); cursor: pointer; }
+.score-explanation li { margin: 7px 0; }
+.forecast-link { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--fg); font-size: 13px; }
+.forecast-link > span:first-child { flex: 1; }
+.forecast-link small { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; }
+.forecast-link b { white-space: nowrap; font-size: 17px; }
+.study-home .hero { padding: 22px; background: var(--card); box-shadow: none; }
+.study-home .hero .ring { display: none; }
+.study-home .hero .title { font-size: 22px; margin-top: 10px; }
+.study-home .hero .sub { margin: 10px 0 16px; }
+.study-home .hero .kpis { margin: 20px 0 !important; }
+.quick-tests { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 6px 0 18px; }
+.quick-tests .btn { font-size: 14px; padding: 14px 10px; min-height: 58px; }
+.program { padding: 20px; border-left: 1px solid var(--line); }
+.program h3 { font-size: 24px; }
+.stages { gap: 14px; margin-top: 20px; }
+.stages li { border: 0; background: transparent; padding: 8px 0; gap: 12px; }
+.stages li.current { box-shadow: none; }
+.stage-n { flex-basis: 32px; height: 32px; background: var(--card2); border: 0; }
+.stage-head { gap: 12px; }
+.stage-head .step-main { min-width: 0; flex: 1; }
+.stage-head b { font-size: 14px; }
+.stage-head .small { font-size: 12px; margin-top: 3px; }
+.stages .ptests, .program > .ptests { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.ptest { display: flex; flex-direction: row; align-items: center; text-align: left; gap: 12px; padding: 14px; min-height: 72px; border-radius: 14px; background: var(--card2); border: 1px solid transparent; }
+.ptest:hover { border-color: var(--accent); }
+.ptest .test-copy { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.ptest .t { font-size: 15px; }
+.ptest .b { font-size: 12px; }
+.ptest .c { font-size: 12px; color: var(--muted); }
+.test-icon { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; background: var(--card); color: var(--accent2); font-size: 15px; font-weight: 800; }
+.ptest.passed .test-icon { background: #20ba82; color: #fff; }
+.test-arrow { font-size: 25px; color: var(--muted); }
+.final-stretch { padding: 20px; border-left: 1px solid var(--line); }
+.final-stretch .steps li { padding: 12px 10px; }
+.section-intro { padding: 14px 0 4px; }
+.section-intro h2 { font-size: 26px; margin-bottom: 4px; }
+.mode { min-height: 126px; padding: 18px; }
+.summary-next { position: sticky; top: calc(54px + var(--safe-top)); z-index: 10; padding: 8px 0; background: var(--bg); margin: 4px 0 12px; }
+.qcard { box-shadow: none; padding: 22px; }
+.opt { background: var(--card2); border-color: transparent; padding: 16px; min-height: 62px; }
+.opt:focus-visible, .btn:focus-visible, .ptest:focus-visible, .mode:focus-visible, a:focus-visible { outline: 3px solid var(--accent2); outline-offset: 3px; }
+@media (max-width: 800px) {
+  .study-home { display: flex; flex-direction: column; }
+  .study-heading { order: -3; }
+  .quick-tests { order: -2; }
+  .study-overview { order: -1; }
+  .study-overview, .study-roadmap { grid-template-columns: 1fr; gap: 0; }
+  .study-heading { flex-direction: column; align-items: stretch; gap: 10px; padding-top: 8px; }
+  .exam-ticket { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; padding: 10px 12px; }
+  .study-heading h1 { font-size: 27px; }
+  .study-home .hero { padding: 16px; }
+  .study-home .hero .kpis { margin: 8px 0 !important; }
+  .quick-tests { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .practice-meter { padding: 18px; }
+  .program, .final-stretch { padding: 16px; }
+}
+@media (max-width: 380px) {
+  .plan-when { grid-template-columns: minmax(0, 1fr) 130px; }
+  .practice-meter h2 { font-size: 17px; }
+  .quick-tests .btn { font-size: 12px; }
+}

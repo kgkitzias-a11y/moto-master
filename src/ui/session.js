@@ -230,6 +230,13 @@ export function renderSummary(ctx) {
     const i = sets.findIndex((_, k) => !(ctx.progress.state.ptests[k] && ctx.progress.state.ptests[k].passed));
     if (i >= 0) nextTest = h('button', { class: 'btn btn-primary btn-block', type: 'button', id: 'next-test', onClick: () => { ctx.session = startSession(MODES.ptest, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings, params: { set: i } }); ctx.navigate('#/session'); } }, `Επόμενο: Τεστ ${i + 1} ▶`);
   }
+  // An uninterrupted practice loop, including after all numbered sets are passed.
+  const loopMode = sum.mode === MODES.exam || sum.mode === MODES.hardexam ? sum.mode : MODES.grind;
+  const nextRound = !nextTest && !retryTest ? h('button', { class: 'btn btn-primary btn-block btn-hero', id: 'next-round', type: 'button', onClick: () => {
+    ctx.session = startSession(loopMode, { questions: ctx.questions, state: ctx.progress.state, settings: ctx.progress.settings });
+    if (ctx.session.isEmpty) { ctx.toast('Δεν υπάρχουν ερωτήσεις τώρα.'); return; }
+    ctx.navigate('#/session');
+  } }, loopMode === MODES.grind ? 'Επόμενος γύρος · 20 ερωτήσεις →' : 'Επόμενη προσομοίωση →') : null;
   const chanceAfter = passChance(ctx.progress.state, ctx.questions, examMoment(ctx.progress.settings, Date.now()));
   const chanceDelta = fx.chanceBefore === null ? null : chanceAfter - fx.chanceBefore;
   const chanceLine = h('p', { class: 'chance-line', id: 'chance-line' }, 'Πιθανότητα επιτυχίας: ',
@@ -248,6 +255,7 @@ export function renderSummary(ctx) {
     sum.wrong ? h('span', { class: 'tag down' }, `${sum.wrong} λάθ${sum.wrong === 1 ? 'ος' : 'η'} → στα λάθη σου`) : null);
   append(wrap, [
     h('h1', null, meta ? meta.title : sum.mode),
+    h('div', { class: 'summary-next' }, retryTest || nextTest || nextRound),
     verdict, headline,
     h('div', { class: 'card' },
       h('div', { class: 'grid' },
@@ -265,8 +273,6 @@ export function renderSummary(ctx) {
       sum.skipped ? h('p', { class: 'muted small' }, `Παραλείψεις: ${sum.skipped}`) : null,
       chanceLine,
       deltas),
-    retryTest ? h('div', { style: { margin: '10px 0' } }, retryTest) : null,
-    nextTest ? h('div', { style: { margin: '10px 0' } }, nextTest) : null,
     h('div', { style: { margin: '10px 0' } }, continueBtn),
     h('div', { style: { margin: '10px 0' } }, grindBtn),
     examSheet(sum),

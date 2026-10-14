@@ -5,6 +5,7 @@ import { modeMeta } from './modes.js';
 import { readinessCard } from './home.js';
 import { groupChances, examMoment } from '../engine/chance.js';
 import { fmtChance } from './final.js';
+import { practiceMeter } from './practice-meter.js';
 
 export function levelDots(level) {
   return h('span', { class: 'level', title: `επίπεδο ${level}/5` }, [0, 1, 2, 3, 4].map((i) => h('i', { class: i < level ? 'on' : '' })));
@@ -32,6 +33,7 @@ export function renderStats(ctx) {
 
   return h('div', null,
     h('h1', null, 'Στατιστικά'),
+    practiceMeter(ctx),
     h('div', { class: 'card' },
       h('div', { class: 'grid' },
         h('div', { class: 'stat' }, h('div', { class: 'v' }, `${r.mastery.pct.toFixed(1)} %`), h('div', { class: 'l' }, 'εμπέδωση')),

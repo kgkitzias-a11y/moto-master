@@ -9,11 +9,11 @@ test('final stretch follows the exam date: daily steps, the eve and the exam day
   await gotoHome(page);
   const card = page.locator('#final-stretch');
   await expect(card).toBeVisible();
-  // Top of the screen: final stretch first, then the Genie-style program, then the daily plan.
-  const order = await page.locator('#view > div > *').evaluateAll((els) => els.slice(0, 3).map((e) => e.id || e.className));
-  expect(order[0]).toBe('final-stretch');
-  expect(order[1]).toBe('program');
-  expect(order[2]).toContain('hero');
+  // The test-first dashboard retains the guided programme and final-stretch process.
+  await expect(page.locator('.study-heading')).toBeVisible();
+  await expect(page.locator('.study-overview #practice-meter')).toBeVisible();
+  await expect(page.locator('.study-roadmap > #program')).toBeVisible();
+  await expect(page.locator('.study-roadmap > #final-stretch')).toBeVisible();
   await expect(card.locator('#grind-btn')).toHaveText('Επιπλέον γύρος ▶');
   await expect(page.locator('#program-next')).toHaveText('Επόμενο: Τεστ 1 ▶');
   await expect(page.locator('#program [data-stage]')).toHaveCount(6);

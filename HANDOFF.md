@@ -1,4 +1,6 @@
-# MOTO MASTER — HANDOFF / SAVE / SUMMON (updated 2026-10-07, v1.9.0)
+# MOTO MASTER — HANDOFF / SAVE / SUMMON (updated 2026-10-14, v1.10.0)
+
+> **Update 2026-10-14 — v1.10.0 (D-043):** confirmed exam date/time saved through the synced UI; no reset. Test-first home, numbered stage rows, immediate next/retry on results. New transparent practice index plus observed seven-day simulator pass rate; existing exam-time forecast stays separate. Genie's exact formula was not publicly verified, so neither score nor layout is claimed as an exact clone. 238 unit + 45 browser tests pass. Question data, reducer, sync and training rules unchanged. Earlier release notes below are historical.
 
 > **Update 2026-10-07 — save point after v1.9.0:** everything committed and pushed; working clone and mirror (`C:\moto_master`) on the same commit; live site serves 1.9.0. No open work in progress.
 
@@ -23,37 +25,37 @@
 ## §0 — SUMMON BLOCK (paste this verbatim into a new session)
 
 ```
-Resume the MOTO MASTER project. Read HANDOFF.md first, then DECISIONS.md (newest first: D-041 … D-001) and AUDIT.md, before touching anything.
+Resume the MOTO MASTER project. Read HANDOFF.md first, then DECISIONS.md (newest first: D-043 … D-001) and AUDIT.md, before touching anything.
 
 Facts you must not re-derive:
 - Working clone: C:\Users\kgkit\Documents\Codex\2026-09-20\rea\work\moto-master (git, branch main, pushed). Mirror: C:\moto_master (same repo; also holds the booklet photos `question pictures\` and the research folder `work\`) — after pushing from the working clone, run `git -C C:\moto_master pull --ff-only`.
-- Live PWA: https://kgkitzias-a11y.github.io/moto-master/ (GitHub Pages from main root, repo kgkitzias-a11y/moto-master). Current version 1.9.0.
+- Live PWA: https://kgkitzias-a11y.github.io/moto-master/ (GitHub Pages from main root, repo kgkitzias-a11y/moto-master). Current version 1.10.0.
 - gh CLI is logged in on this PC as kgkitzias-a11y (binary: %LOCALAPPDATA%\Microsoft\WinGet\Packages\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\bin\gh.exe — not on PATH in Git Bash; use the full path; in Git Bash write `gh api gists/...` without a leading slash). Never start a device-login loop; if auth is lost, send ONE ntfy and stop.
 - Notify me via: curl -s -H "Title: Moto Master" -d "<msg>" https://ntfy.sh/moto-master-kgk-9x4tq2 — only at blocking points and completion.
 - The exam bank is settled: the Ministry's ExerBase.mdb (docs/official/exerbase_moto_el.json) has exactly the 140 booklet questions active, 10 official groups, one question per group, 15 min, ≤1 wrong. The 19 «εκτός ύλης» are NOT in the exam. Booklet photos re-verified 140/140 on 2026-10-07.
 - data/questions.json contract: booklet `text`/`options`/`correct` stay verbatim from the photos; the exam computer's wording lives beside it in `q.exam` (index-aligned), plus `group`, `twins`, reviewed `explanation`. Never change ids, option order or answer keys. Regenerate with `python tools/build_data.py` (needs C:\moto_master\work) then `python tools/patch_data_v16.py`.
 - My progress lives ONLY in my devices + my private Gist (never in the repo; never write the Gist id into the repo). Any change must keep the event log and the reducer backward-compatible (append-only; old events must reduce identically). Before deploying a dataset change, download the log into the git-ignored work/ folder, run `node tools/replay_check.mjs work/p.json <old questions.json> 2026-10-12`, require "RESULT: progress maps 1:1", then delete the copy.
 - Greek UI copy follows docs/GLOSSARY.json (D-027 + v1.6/v1.7 additions). Reuse those terms; never reintroduce calques (προαγωγή, κουτί λαθών, συνεδρία, ώριμη, Mastery…).
-- Workflow: edit → `node tools/build.js X.Y.Z` (version + service-worker precache; ALWAYS after adding a module, and add it to index.html modulepreload) → `npm test` (232 unit) → `npx playwright test` (43 e2e; starts `node tools/serve.js 8123` itself) → commit (author Kostas Kitzias <kgkitzias@gmail.com> is set in the working clone; add the attribution trailer) → `git push` → poll https://kgkitzias-a11y.github.io/moto-master/src/version.js until it shows the new version → pull the mirror.
-- Decide reversible/technical things yourself and record them in DECISIONS.md (next id D-043). Ask me only for money/publish-irreversible/taste decisions; for larger feature sets, show me a numbered proposal list first.
+- Workflow: edit → `node tools/build.js X.Y.Z` (version + service-worker precache; ALWAYS after adding a module, and add it to index.html modulepreload) → `npm test` (238 unit) → `npx playwright test` (45 e2e; starts `node tools/serve.js 8123` itself) → commit (author Kostas Kitzias <kgkitzias@gmail.com> is set in the working clone; add the attribution trailer) → `git push` → poll https://kgkitzias-a11y.github.io/moto-master/src/version.js until it shows the new version → pull the mirror.
+- Decide reversible/technical things yourself and record them in DECISIONS.md (next id D-044). Ask me only for money/publish-irreversible/taste decisions; for larger feature sets, show me a numbered proposal list first.
 
 Then tell me in 5 lines what state the project is in and ask what I want next.
 ```
 
 ---
 
-## §1 — What exists (verified 2026-10-07, v1.9.0)
+## §1 — What exists (verified 2026-10-14, v1.10.0)
 
 | Item | State |
 |---|---|
-| Live URL | https://kgkitzias-a11y.github.io/moto-master/ — v1.9.0, service worker active at that scope |
+| Live URL | https://kgkitzias-a11y.github.io/moto-master/ — v1.10.0, service worker active at that scope |
 | Repo | https://github.com/kgkitzias-a11y/moto-master — main, clean; both local clones on the same commit |
 | Dataset | `data/questions.json`: 140 booklet (tier `booklet`, verbatim from the 19 photos, answer key 140/140) + 19 `archive` («εκτός ύλης», off by default, not in the exam). v1.6 patch adds `group` (1–10), `exam` wording for Q16, 42, 44, 77, 127, 145, 158, 169, 170, `twins` (12 look-alike sets), 31 reviewed explanations, `sources.official`. |
 | Official source | `docs/official/exerbase_moto_el.json` = Ερωτηματολόγιο 2 (Greek) extracted from https://www.yme.gr/uploads/mstheyo/ExerBase.zip (sha256 f95c9b67…9721, mdb 2009-05-27). 145 rows, 5 retired (`pag -55`: old 7/31/55 values, deleted 18/79). Read with `pip install access-parser`; Greek strings starting with digits need (byte, 0x03) → U+03xx re-pairing. |
-| Audit | `AUDIT.md` §1–§11, `DECISIONS.md` D-001…D-041, `docs/GLOSSARY.json` |
-| Tests | `npm test` → 232 pass; `npx playwright test` → 43 pass (2026-10-07) |
+| Audit | `AUDIT.md` §1–§11, `DECISIONS.md` D-001…D-043, `docs/GLOSSARY.json` |
+| Tests | `npm test` → 238 pass; `npx playwright test` → 45 pass (2026-10-14) |
 | Tools | `build.js`, `serve.js`, `build_data.py`, `patch_data_v16.py`, `replay_check.mjs`, `calibrate.mjs`, `sw.template.js` |
-| Owner's progress | PC + iPhone + private Gist (`moto-master-progress.json` + `moto-master-settings.json`). On 2026-10-07: 351 events, 338 answers on 130 questions since the 2026-10-05 reset; exam date 2026-10-12 (tentative), «εκτός ύλης» off, daily goal 50. Never assume it is empty; never copy it into the repo. |
+| Owner's progress | PC + iPhone + private Gist (`moto-master-progress.json` + `moto-master-settings.json`). Existing history preserved; exam date/time changed via the synced UI on 2026-10-14. Never assume the log is empty; never copy it into the repo. |
 
 ### Architecture (vanilla ES modules, no build step, no CDN)
 - `index.html` (CSP meta, modulepreload list — add new modules there too), `sw.js` (generated by `tools/build.js` from `tools/sw.template.js`), `manifest.webmanifest`, `icons/`.
@@ -66,7 +68,8 @@ Then tell me in 5 lines what state the project is in and ask what I want next.
 ### Rules of the game (D-012, D-028, D-029, D-032…D-041)
 - Levels 0–5; promotion = correct + shuffled + ≤15 s + ≥8 h after last promotion; level 5 needs ≥3 distinct days. Wrong → −2 (hard → 0), enters «τα λάθη σου», exits after 3 correct on 3 days. «Σίγουρη» = seen ≥10, ≥90 %, last 5 correct, median ≤6 s. «Εμπέδωση» = level 5 + σίγουρη, booklet only.
 - Readiness gate (5 gates, unchanged): Εμπέδωση 100 % · 5 consecutive 10/10 timed simulations on ≥3 days · one «Όλο το βιβλίο» with 0 wrong · «Μέχρι το πρώτο λάθος» ≥60 · 3 perfect «Σκληρές προσομοιώσεις».
-- Pass chance (D-041, D-042): simplified FSRS memory model at the exam moment (exam date at the «Ώρα εξετάσεων» setting, default 09:00; no more study); slip 0,5 % (2 % look-alikes); unseen/forgotten = 1/options; one question per group, P(≤1 wrong). **Έτοιμος = ≥ 99,5 % and no booklet question < 97 %.** Calibrated cautious on the owner's answers (`tools/calibrate.mjs`).
+- Pass chance (D-041, D-042): custom simplified memory model at the exam moment (exam date at the «Ώρα εξετάσεων» setting, default 09:00; no more study); slip 0,5 % (2 % look-alikes); unseen/forgotten = 1/options; one question per group, P(≤1 wrong). **Model target = ≥ 99,5 % and no booklet question < 97 %.** The exploratory personal-history check does not establish calibrated real-exam probabilities. It is not Anki's FSRS or Genie's formula.
+- Practice index (D-043): `src/engine/practice-score.js`, displayed by `src/ui/practice-meter.js` on home/stats/certification. 4 equal factors, all derived from existing history; separate observed pass rate with sample count. README §14 records the exact heuristic. No score is stored or synced independently.
 - Exam simulation: 10 questions (one per group), 15′, exam wording, hidden id/category, «Παράλειψη» (to the back), no feedback until «Πρακτικό». Hard simulation: 5′, 0 wrong, stops at the first mistake.
 - Practice tests 1–7 (seed 20260915, sets of 20): pass only 20/20; the first mistake ends the test.
 - «Τελικός έλεγχος»: last real answer right within 48 h and ≤15″, twice in a row if ever missed.
@@ -74,7 +77,7 @@ Then tell me in 5 lines what state the project is in and ask what I want next.
 - Daily goal / planner: exam-date quotas (new + reviews); streak day = goal reached or «Σήμερα» completed.
 
 ### Home layout (top to bottom)
-«Τελική ευθεία» (phase by days left: daily steps / eve / exam day; pass chance at the exam + now + weakest; «Τελικός έλεγχος» count; «Επιπλέον γύρος ▶») → «Πρόγραμμα» (6 stages: Τεστ 1–3, Τεστ 4–7, Μαραθώνιος χωρίς λάθος, 3×10/10 στη σειρά, λάθη καθαρά ×2, έτοιμος; one «Επόμενο ▶») → daily-plan hero → plan controls (exam date + «Ώρα εξετάσεων» + tentative) → progress → 5-gate readiness → mode sections (Εξετάσεις · Επανάληψη incl. Τελικός έλεγχος, Πρωί των εξετάσεων, Επιπλέον γύρος · Εξάσκηση · Σκληρά τεστ incl. Δίδυμες ερωτήσεις) → Κάρτες, Σκονάκι.
+Exam ticket → quick starts (mobile) → practice meter + daily hero → quick starts (desktop) → programme + final stretch (two columns on desktop) → plan controls → progress → existing 5-gate readiness → all mode sections → cards/sheet. Programme retains all six stages and strict rules. Summary next/retry button stays visible while scrolling results.
 
 ---
 
@@ -100,4 +103,4 @@ Then tell me in 5 lines what state the project is in and ask what I want next.
 - Never put the owner's progress or the Gist id in the repo (it is public, and a secret Gist is readable by anyone with its id).
 
 ## §4 — Owner profile (for tone and decisions)
-Kostas, Greek, holds category B (code 121), preparing for the category A theory exam (Ερωτηματολόγιο 2, «τα σήματα»); exam tentatively Monday 2026-10-12. Wants: near-certainty of passing, harsh training (stricter than DMV Genie), honest numbers, natural Greek (rejects calques hard), nothing that resets their data. Works by asking for a numbered proposal list, approving items, then expecting thorough autonomous execution with every available tool; will interrupt if something looks wrong. Communicates in English, app in Greek.
+Kostas, Greek, holds category B (code 121), preparing for the category A theory exam (Ερωτηματολόγιο 2, «τα σήματα»); exam now confirmed, with the current date/time in synced settings. Wants: near-certainty of passing, harsh training (stricter than DMV Genie), honest numbers, natural Greek (rejects calques hard), nothing that resets their data. Works by asking for a numbered proposal list, approving items, then expecting thorough autonomous execution with every available tool; will interrupt if something looks wrong. Communicates in English, app in Greek.

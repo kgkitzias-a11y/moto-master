@@ -71,7 +71,9 @@ export function programCard(ctx, start) {
     const ok = !!(p && p.passed);
     const best = p ? `${p.best}/${ids.length}` : '—';
     return h('button', { class: `ptest ${ok ? 'passed' : ''}`, type: 'button', dataset: { set: idx }, onClick: () => start(MODES.ptest, { set: idx }) },
-      h('span', { class: 't' }, label), h('span', { class: 'b' }, ok ? '✓ 100 %' : `καλύτερο ${best}`), h('span', { class: 'c' }, `${ids.length} ερ.`));
+      h('span', { class: 'test-icon', 'aria-hidden': 'true' }, ok ? '✓' : Number.isInteger(idx) ? idx + 1 : '+'),
+      h('span', { class: 'test-copy' }, h('span', { class: 't' }, label), h('span', { class: 'b' }, ok ? '✓ 100 %' : `καλύτερο ${best}`)),
+      h('span', { class: 'c' }, `${ids.length} ερ.`), h('span', { class: 'test-arrow', 'aria-hidden': 'true' }, '›'));
   };
 
   return h('section', { class: 'card program', id: 'program', 'aria-label': 'Πρόγραμμα' },

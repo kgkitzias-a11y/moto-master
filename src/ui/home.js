@@ -1,12 +1,13 @@
 import { h } from './dom.js';
 import { SECTIONS, previewCount } from './modes.js';
-import { programCard } from './program.js';
+import { programCard, programStages } from './program.js';
 import { readiness, dueStreak, dueList, inBin, isSolid } from '../engine/reducer.js';
 import { RULES, MODES } from '../engine/constants.js';
 import { startSession } from '../engine/session.js';
 import { dayKey } from '../engine/time.js';
 import { planControls } from './planner.js';
 import { finalStretchCard } from './final.js';
+import { practiceMeter } from './practice-meter.js';
 export { answersToday } from '../engine/planner.js';
 
 export function ring(pct, label, sub, cls = '') {
@@ -145,17 +146,25 @@ export function renderHome(ctx) {
   };
 
   const sections = SECTIONS.map((sec) => h('div', null, h('h2', null, sec.title), h('div', { class: 'modes' }, sec.modes.map(modeCard))));
+  const nextStage = programStages(ctx, now).stages.find((stage) => !stage.done)?.next;
 
-  // Top of the screen: today's steps (Τελική ευθεία), then the Genie-style ordered path (Πρόγραμμα)
-  // with the numbered practice tests, then the daily plan.
-  return h('div', null,
-    finalStretchCard(ctx, start),
-    programCard(ctx, start),
-    hero,
+  return h('div', { class: 'study-home' },
+    h('header', { class: 'study-heading' },
+      h('div', null, h('div', { class: 'eyebrow' }, 'ΚΑΤΗΓΟΡΙΑ Α · ΘΕΩΡΙΑ'), h('h1', null, 'Πάμε για το επόμενο.')),
+      h('a', { class: 'exam-ticket', href: '#/settings' },
+        h('span', null, s.examTentative ? 'Προσωρινή ημερομηνία' : s.examDate ? 'Επιβεβαιωμένες εξετάσεις' : 'Όρισε εξετάσεις'),
+        h('b', null, s.examDate ? `${new Intl.DateTimeFormat('el-GR', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date(s.examDate + 'T12:00:00'))} · ${s.examTime || '09:00'}` : 'Ημερομηνία & ώρα'))),
+    h('div', { class: 'study-overview' }, practiceMeter(ctx), hero),
+    h('div', { class: 'quick-tests', 'aria-label': 'Γρήγορη εξάσκηση' },
+      h('button', { class: 'btn btn-primary', type: 'button', id: 'quick-next', onClick: () => start(nextStage?.mode || MODES.grind, nextStage?.params || {}) }, nextStage ? `Επόμενο: ${nextStage.label} →` : 'Άλλος ένας γύρος →'),
+      h('button', { class: 'btn', type: 'button', id: 'quick-exam', onClick: () => start(MODES.exam) }, 'Προσομοίωση · 10 ερωτήσεις →'),
+      h('button', { class: 'btn', type: 'button', id: 'quick-grind', onClick: () => start(MODES.grind) }, 'Επιπλέον γύρος · 20 ερωτήσεις →'),
+      h('button', { class: 'btn', type: 'button', id: 'quick-mistakes', onClick: () => start(bin ? MODES.wrong : MODES.grind) }, bin ? `Τα λάθη σου · ${bin} →` : 'Αδύναμες ερωτήσεις →')),
+    h('div', { class: 'study-roadmap' }, programCard(ctx, start), finalStretchCard(ctx, start)),
     planControls(ctx),
     progressCard(ctx),
     readinessCard(ctx),
-    sections,
+    h('div', { id: 'all-tests' }, h('div', { class: 'section-intro' }, h('h2', null, 'Όλα τα τεστ'), h('p', { class: 'small muted' }, 'Διάλεξε έναν γύρο. Συνέχισε κατευθείαν στον επόμενο.')), sections),
     h('p', { class: 'small muted', style: { marginTop: '14px' } }, h('a', { href: '#/cards', id: 'cards-link' }, '🗂 Κάρτες'), ' — όρια ταχύτητας, δίδυμες ερωτήσεις, τι ισχύει στις εξετάσεις.'),
     h('p', { class: 'small muted' }, h('a', { href: '#/sheet' }, '📄 Σκονάκι'), ' — όλες οι ερωτήσεις με τη σωστή απάντηση, ανά κατηγορία.'),
   );
