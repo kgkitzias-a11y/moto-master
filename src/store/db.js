@@ -30,7 +30,7 @@ function lsRead() {
   try { return JSON.parse(localStorage.getItem(LS_FALLBACK_KEY) || '[]'); } catch { return []; }
 }
 function lsWrite(events) {
-  try { localStorage.setItem(LS_FALLBACK_KEY, JSON.stringify(events)); } catch (e) { console.warn('localStorage write failed', e); }
+  localStorage.setItem(LS_FALLBACK_KEY, JSON.stringify(events));
 }
 
 export async function loadEvents() {
@@ -60,7 +60,7 @@ export async function addEvents(events) {
     for (const e of events) {
       const req = os.add(e);
       req.onsuccess = () => { added++; };
-      req.onerror = (ev) => { ev.preventDefault(); ev.stopPropagation(); }; // duplicate id → ignore
+      req.onerror = (ev) => { if(req.error?.name === 'ConstraintError') {ev.preventDefault(); ev.stopPropagation();} }; // only duplicate ids may be ignored
     }
     tx.oncomplete = () => resolve(added);
     tx.onerror = () => reject(tx.error);

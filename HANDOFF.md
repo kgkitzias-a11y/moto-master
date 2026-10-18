@@ -1,4 +1,6 @@
-# MOTO MASTER — HANDOFF / SAVE / SUMMON (updated 2026-10-14, v1.10.0)
+# MOTO MASTER — HANDOFF (updated 2026-10-18, v2.0.0)
+
+> **Current v2.0.0 / D-044:** one resumable Mega run replaces every old test mode. 560 core answers (140 verified questions ×4), then all pending mistakes corrected twice with spacing. Old answers, settings, pairing and exam appointment remain intact; no reset. All probability/readiness UI is removed. Immutable plans are stored separately; the cursor is replayed from ordinary answer events, with a local write-ahead recovery record. Backup includes plans. Gist sync adds moto-master-mega.json without altering the old event schema. Active validation: 245 unit + 14 browser tests. Older UI suites moved to tests/legacy-e2e; old engine tests remain. Read README for current behavior. Everything below describes earlier releases unless explicitly applicable. Next decision id D-045.
 
 > **Update 2026-10-14 — v1.10.0 (D-043):** confirmed exam date/time saved through the synced UI; no reset. Test-first home, numbered stage rows, immediate next/retry on results. New transparent practice index plus observed seven-day simulator pass rate; existing exam-time forecast stays separate. Genie's exact formula was not publicly verified, so neither score nor layout is claimed as an exact clone. 238 unit + 45 browser tests pass. Question data, reducer, sync and training rules unchanged. Earlier release notes below are historical.
 

@@ -3,13 +3,10 @@ import { dayKey } from './engine/time.js';
 import { Progress } from './store/progress.js';
 import { decodePairing } from './sync/gist.js';
 import { h, clear, fmtRel } from './ui/dom.js';
-import { renderHome } from './ui/home.js';
-import { renderSession, renderSummary } from './ui/session.js';
+import { renderMegaHome, renderMegaSession } from './ui/mega.js';
 import { renderStats } from './ui/stats.js';
 import { renderReview, renderQuestion } from './ui/review.js';
 import { renderSettings } from './ui/settings.js';
-import { renderCertification } from './ui/certification.js';
-import { renderModeSetup } from './ui/setup.js';
 import { renderSheet } from './ui/sheet.js';
 import { renderCards } from './ui/cards.js';
 import { applyTheme } from './ui/fx.js';
@@ -50,9 +47,9 @@ function consumePairing() {
 }
 
 const routes = {
-  '': renderHome, '/': renderHome,
-  '/stats': renderStats, '/review': renderReview, '/settings': renderSettings, '/certification': renderCertification,
-  '/session': renderSession, '/summary': renderSummary, '/sheet': renderSheet, '/cards': renderCards,
+  '': renderMegaHome, '/': renderMegaHome,
+  '/stats': renderStats, '/review': renderReview, '/settings': renderSettings,
+  '/mega': renderMegaSession, '/sheet': renderSheet, '/cards': renderCards,
 };
 
 function route() {
@@ -61,13 +58,11 @@ function route() {
   const app = document.getElementById('app');
   let node;
   const qm = hash.match(/^\/q\/(\d+)$/);
-  const sm = hash.match(/^\/setup\/([a-z0-9]+)$/);
   if (qm) node = renderQuestion(ctx, Number(qm[1]));
-  else if (sm) node = renderModeSetup(ctx, sm[1]);
   else if (Object.hasOwn(routes, hash)) node = routes[hash](ctx);
-  else node = renderHome(ctx);
+  else node = renderMegaHome(ctx);
   clear(view).appendChild(node);
-  app.classList.toggle('in-session', hash === '/session' && !!ctx.session && !ctx.session.ended);
+  app.classList.toggle('in-session', hash === '/mega');
   for (const a of document.querySelectorAll('#tabbar a')) {
     const tab = a.dataset.tab;
     a.classList.toggle('active', (tab === 'home' && (hash === '/' || hash === '')) || hash.startsWith('/' + tab) || (tab === 'review' && !!qm));

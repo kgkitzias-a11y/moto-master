@@ -2,9 +2,11 @@
 // The token is passed in by the caller (read from localStorage) and never logged.
 import { sanitizeEvents } from '../engine/events.js';
 import { mergePreferences, sanitizePreferences, samePreferences } from './preferences.js';
+import { mergePlans, sanitizePlans } from '../engine/mega.js';
 
 export const GIST_FILE = 'moto-master-progress.json';
 export const SETTINGS_FILE = 'moto-master-settings.json';
+export const MEGA_FILE = 'moto-master-mega.json';
 const RAW_HOST = 'gist.githubusercontent.com';
 export const GIST_DESC = 'Moto Master — πρόοδος (private, auto-managed)';
 const API = 'https://api.github.com';
@@ -21,10 +23,18 @@ export class SyncError extends Error {
   constructor(message, { status = 0, kind = 'network' } = {}) { super(message); this.status = status; this.kind = kind; }
 }
 
+// A stalled connection must not prevent starting or resuming the locally saved run.
+async function boundedFetch(url, options) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try { return await fetch(url, { ...options, signal: controller.signal }); }
+  finally { clearTimeout(timer); }
+}
+
 async function api(token, path, { method = 'GET', body = null } = {}) {
   let res;
   try {
-    res = await fetch(`${API}${path}`, { method, headers: { ...headers(token), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
+    res = await boundedFetch(`${API}${path}`, { method, headers: { ...headers(token), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
   } catch (e) {
     throw new SyncError('Δεν υπάρχει σύνδεση', { kind: 'network' });
   }
@@ -62,7 +72,7 @@ async function readGistFile(token, gist, name = GIST_FILE) {
   if (u.protocol !== 'https:' || u.hostname !== RAW_HOST) throw new SyncError('Μη αναμενόμενος host raw_url', { kind: 'format' });
   let res;
   // The raw URL of a secret gist is unguessable and needs no auth: the token is deliberately NOT sent here.
-  try { res = await fetch(u.href, { cache: 'no-store', redirect: 'error', credentials: 'omit' }); }
+  try { res = await boundedFetch(u.href, { cache: 'no-store', redirect: 'error', credentials: 'omit' }); }
   catch { throw new SyncError('Δεν υπάρχει σύνδεση', { kind: 'network' }); }
   if (!res.ok) throw new SyncError(`raw ${res.status}`, { status: res.status, kind: 'http' });
   return res.text();
@@ -82,7 +92,13 @@ export async function getGist(token, gistId) {
     }
     preferences = sanitizePreferences(data.settings);
   }
-  return { gist, events: sanitizeEvents(decodeEvents(text)), preferences };
+  const megaText = await readGistFile(token, gist, MEGA_FILE);
+  let megaPlans = [];
+  if (megaText) {
+    try { const data=JSON.parse(megaText); if(data.v!==1 || !Array.isArray(data.plans))throw new Error(); megaPlans=sanitizePlans(data.plans); }
+    catch { throw new SyncError('Μη έγκυρο αποθηκευμένο Mega τεστ', {kind:'format'}); }
+  }
+  return { gist, events: sanitizeEvents(decodeEvents(text)), preferences, megaPlans };
 }
 
 export async function findGist(token) {
@@ -101,9 +117,10 @@ export async function createGist(token, events) {
   return gist.id;
 }
 
-export async function updateGist(token, gistId, events, preferences = undefined) {
+export async function updateGist(token, gistId, events, preferences = undefined, megaPlans = undefined) {
   const files = { [GIST_FILE]: { content: encodeEvents(events) } };
   if (preferences !== undefined) files[SETTINGS_FILE] = { content: JSON.stringify({ v: 1, settings: canon(sanitizePreferences(preferences)) }) };
+  if (megaPlans !== undefined) files[MEGA_FILE] = {content:JSON.stringify({v:1,plans:sanitizePlans(megaPlans)})};
   const res = await api(token, `/gists/${encodeURIComponent(gistId)}`, { method: 'PATCH', body: { files } });
   return res.json();
 }
@@ -148,14 +165,15 @@ export async function syncOnce(token, io) {
   let gistId = io.getGistId();
   let remote = [];
   let remotePreferences = {};
+  let remotePlans = [];
   if (gistId) {
-    try { ({ events: remote, preferences: remotePreferences } = await getGist(token, gistId)); }
+    try { ({ events: remote, preferences: remotePreferences, megaPlans: remotePlans } = await getGist(token, gistId)); }
     catch (e) { if (e.kind === 'notfound') { gistId = null; } else throw e; }
   }
   if (!gistId) {
     const r = await findOrCreateGist(token);
     gistId = r.id; io.setGistId(gistId);
-    if (!r.created) ({ events: remote, preferences: remotePreferences } = await getGist(token, gistId));
+    if (!r.created) ({ events: remote, preferences: remotePreferences, megaPlans: remotePlans } = await getGist(token, gistId));
   }
   const local = await io.loadLocal();
   const { merged, onlyLocal, onlyRemote } = mergeEvents(local, remote);
@@ -174,12 +192,17 @@ export async function syncOnce(token, io) {
   const settingsChanged = preferences !== undefined && !samePreferences(localPreferences, preferences);
   const settingsPush = preferences !== undefined && !samePreferences(remotePreferences, preferences);
   if (preferences !== undefined) io.setPreferences?.(preferences);
+  const localPlans=io.getMegaPlans?.();
+  const plans=localPlans===undefined?undefined:mergePlans(localPlans,remotePlans);
+  const plansChanged=plans!==undefined && JSON.stringify(plans)!==JSON.stringify(localPlans);
+  const plansPush=plans!==undefined && JSON.stringify(plans)!==JSON.stringify(remotePlans);
+  if(plans!==undefined)io.setMegaPlans?.(plans);
   let pushed = 0;
-  if (push.length || remoteStale || settingsPush) {
-    await updateGist(token, gistId, sortForStorage(compacted), preferences);
+  if (push.length || remoteStale || settingsPush || plansPush) {
+    await updateGist(token, gistId, sortForStorage(compacted), preferences, plans);
     pushed = push.length;
   }
-  return { pushed, pulled: pull.length, gistId, total: compacted.length, settingsChanged };
+  return { pushed, pulled: pull.length, gistId, total: compacted.length, settingsChanged, plansChanged };
 }
 
 export function sortForStorage(events) {

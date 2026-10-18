@@ -6,6 +6,8 @@ import { uuid } from '../engine/shuffle.js';
 import { studyPlan } from '../engine/planner.js';
 import { SHARED_KEYS, initialPreferences, mergePreferences, validPreference } from '../sync/preferences.js';
 import { syncOnce, SyncError, decodeEvents, encodeEvents, sortForStorage } from '../sync/gist.js';
+import { loadMegaPlans, saveMegaPlans, pendingMegaAnswer, stageMegaAnswer, clearPendingMega } from './mega.js';
+import { activePlan, createMegaPlan, megaState } from '../engine/mega.js';
 
 export class Progress extends EventTarget {
   constructor(questions) {
@@ -21,10 +23,14 @@ export class Progress extends EventTarget {
     this._seq = 0; // bumped on every local append; lets a sync know if new events arrived meanwhile
     this.sync = { status: 'local', lastAt: this.settings.lastSyncAt, error: null, inFlight: null };
     this._timer = null;
+    this.megaPlans = loadMegaPlans();
   }
 
   async init() {
     this.events = await loadEvents();
+    const pending=sanitizeEvents([pendingMegaAnswer()]);
+    if(pending.length && !this.events.some(e=>e.id===pending[0].id)) { await addEvents(pending);this.events.push(...pending);this.dirty=true; }
+    clearPendingMega();
     this._recompute();
     return this;
   }
@@ -35,6 +41,19 @@ export class Progress extends EventTarget {
   }
 
   get token() { return loadToken(); }
+  mega() { return megaState(activePlan(this.megaPlans,this.state.resetAt),this.events,this.questions); }
+  startMega() {
+    const current=this.mega(); if(current && !current.done)return current;
+    const plan=createMegaPlan(this.questions,this.state);
+    this.megaPlans=saveMegaPlans([...this.megaPlans,plan]);
+    this.dirty=true;this._seq++;this._scheduleSync();this._recompute();
+    return this.mega();
+  }
+  async answerMega(event) {
+    stageMegaAnswer(event);
+    await this.append(event);
+    clearPendingMega();
+  }
   plan(now = Date.now()) { return studyPlan(this.questions, this.events, this.settings, now); }
   setToken(t) { saveToken(t ? t.trim() : ''); this.dispatchEvent(new Event('sync')); }
 
@@ -78,10 +97,14 @@ export class Progress extends EventTarget {
 
   // ---- export / import ----
   exportJson() {
-    return encodeEvents(sortForStorage(this.events));
+    const data=JSON.parse(encodeEvents(sortForStorage(this.events)));
+    if(this.megaPlans.length)data.megaPlans=this.megaPlans;
+    return JSON.stringify(data);
   }
   async importJson(text) {
     const incoming = sanitizeEvents(decodeEvents(text));
+    const plans=JSON.parse(text).megaPlans;
+    if(Array.isArray(plans)) { this.megaPlans=saveMegaPlans(plans);this.dirty=true;this._seq++;this._scheduleSync(); }
     const have = new Set(this.events.map((e) => e.id));
     const fresh = incoming.filter((e) => !have.has(e.id));
     if (fresh.length) {
@@ -119,6 +142,8 @@ export class Progress extends EventTarget {
       setGistId: (id) => this.updateSettings({ gistId: id }),
       getPreferences: () => this.settings.sharedPreferences,
       setPreferences: (prefs) => this._applyPreferences(prefs),
+      getMegaPlans: () => this.megaPlans,
+      setMegaPlans: (plans) => { this.megaPlans=saveMegaPlans(plans); },
     };
     const seqAtStart = this._seq;
     const run = (async () => {
@@ -128,7 +153,7 @@ export class Progress extends EventTarget {
         const now = Date.now();
         this.updateSettings({ lastSyncAt: now });
         this._setSync({ status: 'synced', lastAt: now, error: null, last: r });
-        if (r.pulled || r.total !== this.events.length || r.settingsChanged) this._recompute();
+        if (r.pulled || r.total !== this.events.length || r.settingsChanged || r.plansChanged) this._recompute();
         return r;
       } catch (e) {
         const msg = e instanceof SyncError ? e.message : (e && e.message) || 'Σφάλμα';
