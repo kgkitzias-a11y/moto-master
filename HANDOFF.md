@@ -1,4 +1,6 @@
-# MOTO MASTER — HANDOFF (updated 2026-10-18, v2.0.0)
+# MOTO MASTER — HANDOFF (updated 2026-10-19, v2.1.0)
+
+> **Current v2.1.0 / D-045:** owner requested one large pass estimate at app opening. Home leads with the existing Moto Master model evaluated now, explicitly labelled as an unvalidated estimate, with expandable assumptions and a statement that it is not Genie’s verified formula. No data, Mega queue/cursor, settings or sync changes. 245 unit + 15 browser tests. Next decision D-046. Earlier notes below are historical.
 
 > **Current v2.0.0 / D-044:** one resumable Mega run replaces every old test mode. 560 core answers (140 verified questions ×4), then all pending mistakes corrected twice with spacing. Old answers, settings, pairing and exam appointment remain intact; no reset. All probability/readiness UI is removed. Immutable plans are stored separately; the cursor is replayed from ordinary answer events, with a local write-ahead recovery record. Backup includes plans. Gist sync adds moto-master-mega.json without altering the old event schema. Active validation: 245 unit + 14 browser tests. Older UI suites moved to tests/legacy-e2e; old engine tests remain. Read README for current behavior. Everything below describes earlier releases unless explicitly applicable. Next decision id D-045.
 

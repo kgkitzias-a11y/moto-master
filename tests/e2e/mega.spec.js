@@ -12,7 +12,7 @@ test('single test replaces every old route; existing answers and confirmed setti
  await home(page);
  await page.evaluate(async()=>{const {ctx}=await import('/src/app.js');ctx.progress.updateSettings({examDate:'2026-10-19',examTime:'11:30',examTentative:false});const q=ctx.questions[0];await ctx.progress.append({id:crypto.randomUUID(),t:Date.now()-10000,k:'answer',q:q.id,ch:q.correct,ok:true,ms:2000,m:'practice',s:'old',cf:null,sh:true,tl:null,hd:false,rc:false});});
  await page.reload();await expect(page.locator('.mega-ticket')).toContainText('19 Οκτωβρίου');await expect(page.locator('.mega-ticket')).toContainText('11:30');
- for(const route of ['#/setup/practice','#/session','#/summary','#/certification']){await page.goto('/'+route);await expect(page.locator('#mega-start')).toBeVisible();await expect(page.locator('#view')).not.toContainText('πιθανότητα');await expect(page.locator('.mode')).toHaveCount(0);}
+ for(const route of ['#/setup/practice','#/session','#/summary','#/certification']){await page.goto('/'+route);await expect(page.locator('#mega-start')).toBeVisible();await expect(page.locator('#pass-estimate')).toHaveCount(1);await expect(page.locator('#practice-meter,#pass-chance')).toHaveCount(0);await expect(page.locator('.mode')).toHaveCount(0);}
  await page.goto('/#/stats');await expect(page.locator('#history-accuracy')).toContainText('1/1');
  await start(page);await answer(page);await page.goto('/#/stats');await expect(page.locator('#history-accuracy')).toContainText('2/2');
 });
@@ -72,4 +72,18 @@ test.describe('offline',()=>{test.use({serviceWorkers:'allow'});test('installed 
 test('a stalled online sync cannot block resuming the local run',async({page})=>{
  const gh=makeFakeGithub();await page.route('https://api.github.com/**',gh.handler);await saveToken(page,'ghp_TESTONLY');await start(page);await answer(page);await next(page);await syncNow(page);
  await page.unroute('https://api.github.com/**');await page.route('https://api.github.com/**',()=>{});await home(page);await page.locator('#mega-start').click();await expect(page.locator('#mega-session')).toBeVisible({timeout:20000});expect(await cursor(page)).toBe('1');await expect(page.locator('#sync-pill')).not.toHaveClass(/pill-synced/);
+});
+
+
+test('one large estimate leads home, reflects saved answers and preserves the Mega cursor',async({page})=>{
+ await home(page);await expect(page.locator('#pass-estimate-value')).toHaveText('—');
+ await page.evaluate(async()=>{const {ctx}=await import('/src/app.js');await ctx.progress.append(ctx.questions.filter(q=>q.tier==='booklet').map(q=>({id:crypto.randomUUID(),t:Date.now()-7200000,k:'answer',q:q.id,ch:q.correct,ok:true,ms:2000,m:'practice',s:'earlier',cf:null,sh:true,tl:null,hd:false,rc:false})));});
+ await expect(page.locator('#pass-estimate')).toHaveCount(1);await expect(page.locator('#pass-estimate-value')).toHaveText(/[0-9]+(?:,[0-9])?%/);
+ const before=await page.locator('#pass-estimate-value').innerText();
+ for(const width of [375,1280]){await page.setViewportSize({width,height:812});await expect(page.locator('#pass-estimate-value')).toBeInViewport();await expect(page.locator('#mega-start')).toBeInViewport();expect(await page.locator('#pass-estimate-value').evaluate(el=>parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThanOrEqual(80);}
+ await page.getByText('Πώς υπολογίζεται;',{exact:true}).click();await expect(page.locator('.pass-estimate-details')).toContainText('Δεν είναι ο επαληθευμένος αλγόριθμος του DMV Genie');
+ await start(page);await answer(page,false);await next(page);await page.locator('#mega-pause').click();
+ const after=await page.locator('#pass-estimate-value').innerText();expect(Number(after.replace(',','.').replace('%',''))).toBeLessThan(Number(before.replace(',','.').replace('%','')));
+ await page.reload();await expect(page.locator('#pass-estimate-value')).toHaveText(after);await page.goto('/#/stats');await expect(page.locator('#history-accuracy')).toContainText('140/141');
+ await start(page);expect(await cursor(page)).toBe('1');
 });

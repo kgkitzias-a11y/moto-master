@@ -259,6 +259,16 @@ details summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 :root[data-theme="light"] { --accent: #2164e8; --accent2: #1853c7; --card2: #f3f4fa; --bg: #f5f6fa; }
 .btn-primary { background: #2164e8; border-color: #2164e8; color: #fff; box-shadow: 0 4px 12px rgba(33,100,232,.16); }
 .view:has(.mega-home) { max-width: 1000px; }
+.pass-estimate { text-align:center; padding:24px; border-top:3px solid var(--accent); }
+.pass-estimate h1 { font-size:clamp(20px,3vw,28px); margin:8px 0 0; letter-spacing:-.5px; }
+.pass-estimate-value { font-size:clamp(80px,14vw,124px); font-weight:900; line-height:1.1; letter-spacing:-5px; font-variant-numeric:tabular-nums; color:var(--accent2); margin:4px 0 8px; }
+.pass-estimate-caption { margin:0; font-size:14px; color:var(--muted); }
+.pass-estimate-details { margin:12px auto 0; max-width:700px; font-size:13px; color:var(--muted); }
+.pass-estimate-details summary { cursor:pointer; display:list-item; list-style-position:inside; }
+.pass-estimate-details p { text-align:left; }
+.mega-home .mega-heading { margin:12px 0; }
+.mega-home .mega-ticket { width:100%; flex-direction:row; justify-content:space-between; align-items:center; flex-wrap:wrap; padding:10px 14px; }
+.mega-hero #mega-start { margin:18px 0 6px; }
 .mega-heading { display:flex; justify-content:space-between; gap:24px; align-items:center; margin:24px 0; }
 .mega-heading h1 { font-size:clamp(28px,4vw,42px); margin:8px 0; letter-spacing:-1px; }
 .mega-ticket { display:flex; flex-direction:column; gap:5px; font-size:14px; background:var(--card); border:1px solid var(--line); padding:14px 18px; border-radius:14px; }

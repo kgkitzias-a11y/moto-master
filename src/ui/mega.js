@@ -2,6 +2,7 @@ import { h, LETTERS } from './dom.js';
 import { megaQuestion } from '../engine/mega.js';
 import { uuid } from '../engine/shuffle.js';
 import { megaReview, setMegaReview, clearMegaReview } from '../store/mega.js';
+import { renderPassEstimate } from './pass-estimate.js';
 const pct=(n,d)=>d?`${Math.round(100*n/d)}%`:'—';
 const stat=(value,label)=>h('div',{class:'mega-stat'},h('b',null,value),h('span',null,label));
 function progress(m,base=560) {
@@ -21,12 +22,14 @@ export function renderMegaHome(ctx) {
     } catch(e) {error.hidden=false;error.textContent='Δεν αποθηκεύτηκε το τεστ. Ελευθέρωσε χώρο και ξαναδοκίμασε.';start.disabled=false;start.textContent='Δοκίμασε ξανά';}
   }},m&&!m.done?'Συνέχισε το Mega τεστ →':m?.done?'Νέο Mega τεστ →':'Ξεκίνα το Mega τεστ →');
   return h('div',{class:'mega-home'},
-    h('header',{class:'mega-heading'},h('div',null,h('div',{class:'eyebrow'},'MOTO MASTER / ΤΕΛΙΚΗ ΠΡΟΕΤΟΙΜΑΣΙΑ'),h('h1',null,'Ένα τεστ. Όλη η ύλη.')),
+    renderPassEstimate(ctx),
+    h('header',{class:'mega-heading'},
       h('div',{class:'mega-ticket'},h('span',null,s.examTentative?'Προσωρινή ημερομηνία':'Η εξέτασή σου'),h('b',null,s.examDate?`${new Intl.DateTimeFormat('el-GR',{weekday:'long',day:'numeric',month:'long'}).format(new Date(s.examDate+'T12:00:00'))} · ${s.examTime||'09:00'}`:'Όρισε ημερομηνία στις Ρυθμίσεις'))),
     h('section',{class:'card mega-hero'},h('div',{class:'mega-title-row'},h('h2',null,'Mega προετοιμασία'),h('span',{class:'tag'},`${core}+ απαντήσεις`)),
+      start,error,
       h('p',{class:'muted'},`${bank.length} διαφορετικές ερωτήσεις, τέσσερα πλήρη περάσματα. Οι νέες, οι αδύναμες και όσες έχεις χάσει μπαίνουν πρώτες. Κάθε λάθος επιστρέφει αργότερα, μέχρι να απαντηθεί σωστά δύο φορές στη σειρά.`),progress(m,core),
       h('div',{class:'mega-numbers'},stat(m?.index||0,'απαντήσεις στο Mega'),stat(m?.pending.length||0,'λάθη για διόρθωση'),stat(m?pct(m.correct,m.index):'—','ακρίβεια αυτού του τεστ')),
-      start,error,h('p',{class:'small mega-save-note'},'✓ Αυτόματη αποθήκευση σε κάθε απάντηση. Παύση, κλείσιμο εφαρμογής, συνέχεια από εκεί που έμεινες.'),
+      h('p',{class:'small mega-save-note'},'✓ Αυτόματη αποθήκευση σε κάθε απάντηση. Παύση, κλείσιμο εφαρμογής, συνέχεια από εκεί που έμεινες.'),
       h('p',{class:'small muted'},p.token?'Για αλλαγή συσκευής: περίμενε «Συγχρονίστηκε» και άνοιξε την ενημερωμένη εφαρμογή στην άλλη συσκευή.':'Η αποθήκευση λειτουργεί σε αυτή τη συσκευή, και χωρίς σύνδεση.')),
     h('div',{class:'mega-info-grid'},h('section',{class:'card'},h('h3',null,'Όλα μέσα στο ίδιο τεστ'),h('ul',null,
       h('li',null,'Τέσσερις εμφανίσεις κάθε ερώτησης, με ανακατεμένες επιλογές.'),h('li',null,'Διατύπωση βιβλίου και εξετάσεων όπου διαφέρουν.'),

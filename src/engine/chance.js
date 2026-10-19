@@ -3,7 +3,8 @@
 //   passChance      — chance of ≤1 wrong in the real exam: one question from each official group
 //   isProven        — «Τελικός έλεγχος»: last real answer correct within 48 h (twice in a row if ever missed)
 //
-// Memory model (v1.8, D-041), a simplified FSRS / half-life model, deliberately strict:
+// Heuristic memory model (v1.8, D-041). Not the FSRS or DMV Genie algorithm;
+// not calibrated against real exam pass/fail outcomes:
 //   • stability S (days) = time after which recall drops to 90 %; recall R(t) = 0.9^(t/S)
 //   • a right answer grows S only as much as the question had started to fade (answering it again
 //     a minute later adds almost nothing); every past miss halves the growth
@@ -11,8 +12,8 @@
 //   • trust: each past miss removes 10 % of recall, halved by every right answer ≥1 h apart since
 //   • what you would answer = recall × (1 − slip) + (1 − recall) × blind guess (1 / options)
 //     slip = 0,5 % misreading/mis-tapping per question, 2 % for look-alike questions
-// Checked against the owner's 297 real answers: in every probability range the model predicted
-// fewer right answers than actually happened (work/calib.mjs, not deployed).
+// An earlier check against one learner's practice answers is not evidence of real-exam
+// probability calibration. UI must label this as an unvalidated model estimate.
 import { RULES } from './constants.js';
 
 const DAY = 24 * 60 * 60 * 1000;
